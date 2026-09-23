@@ -49,12 +49,23 @@ The cost basis is fixed at zero and has no input control, so the tax is always 1
 
 ## Known inconsistency in the brief's defaults
 
-The ₹3 cr development budget works out to ₹103 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.17 cr and the buyer's profit at an ₹85,000 ask would fall from ₹5.62 cr to a loss of ₹1.55 cr. The page warns when the implied rate falls outside ₹250–450. Settle this number before trusting any verdict on the ladder.
+The ₹3 cr development budget works out to ₹103 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.17 cr and the buyer's profit at an ₹85,000 ask would fall from ₹5.62 cr to a loss of ₹1.55 cr. The hero tile prints the implied rate against its own denominator, so it is visible without a banner. Settle this number before trusting any verdict on the ladder.
 
 ## Keeping the model in sync
 
 `seller/index.html` carries a byte-identical copy of the `<script id="model">` block from `../index.html`. `seller.test.js` asserts they match, so editing the model in one file without the other fails the test. To re-sync after changing the root model, copy that block across.
 
+## On mobile
+
+The layout stacks below 820px and puts the results above the assumptions panel, so a phone does not open on a wall of sliders. Wide tables scroll sideways with the asking-price column pinned in place. The assumption groups stay collapsed except the first two.
+
 ## Hosting
 
-`.openai/hosting.json` points at `dist/`, which is gitignored. Copy `seller/index.html` to `dist/seller/index.html` to publish it alongside the root modeler.
+Published by GitHub Pages from `main` at the repository root:
+
+- <https://anupmm.github.io/moodbidri-land-deal/> — the buyer-side modeler
+- <https://anupmm.github.io/moodbidri-land-deal/seller/> — this page
+
+Pushing to `main` redeploys; the build takes a minute or two. There is no build step, so the files are served exactly as committed. `prompt.md` is gitignored because it carries the current offer and target prices.
+
+`.openai/hosting.json` still points at `dist/`, which is gitignored and unused by Pages.
