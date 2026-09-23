@@ -8,11 +8,12 @@ header{background:#142e3a;color:white;padding:25px 4vw;display:flex;justify-cont
 h1{font-size:25px;margin:2px 0}h2{font-size:19px;margin:0 0 16px}p{margin:8px 0}
 small,.muted{color:var(--muted)}header small{color:#b5c9d4}
 .eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:750}
-.layout{display:grid;grid-template-columns:330px minmax(0,1fr);max-width:1660px;margin:auto;gap:24px;padding:24px}
+.layout{display:grid;grid-template-columns:330px minmax(0,1fr);grid-template-areas:'side hero' 'side main';align-items:start;max-width:1660px;margin:auto;gap:20px 24px;padding:24px}
+aside{grid-area:side}main{grid-area:main}.hero{grid-area:hero}
 aside{background:white;border:1px solid var(--line);border-radius:12px;align-self:start;padding:20px}
 main{min-width:0}
 .section{background:white;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:20px}
-.hero{background:#164dc0;color:white;border-radius:12px;padding:26px;margin-bottom:20px}
+.hero{background:#164dc0;color:white;border-radius:12px;padding:26px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:22px 26px;margin-top:16px}
 .tiles>div{min-width:0}
 .tiles span{display:block;font-size:13px;color:#c3d5f8;font-weight:600}
@@ -72,8 +73,8 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
  header{padding:18px 16px;align-items:start}
  h1{font-size:22px}h2{font-size:17px}
  .layout{display:flex;flex-direction:column;padding:14px;gap:14px}
- /* Numbers before knobs: on a phone the panel would otherwise bury the results. */
- main{order:1}aside{order:2;width:100%}
+ /* Hero first, then the knobs that drive it, then the detail. */
+ .hero{order:1}aside{order:2;width:100%}main{order:3}
  .section,aside{padding:16px}
  .hero{padding:18px}
  .tiles{gap:16px 20px;margin-top:12px}
@@ -91,14 +92,6 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 </style></head><body>
 <header><div><small class="eyebrow">Moodbidri &middot; Dakshina Kannada</small><h1>Seller's view</h1><small>What each asking price nets us, and what the buyer has to believe to pay it.</small></div></header>
 <div class="layout">
-<aside>
-<div class="heading"><h2>Assumptions</h2></div>
-<div class="actions"><button id="reset">Reset</button><button id="save">Save</button><button id="load">Load</button></div>
-<div id="status" role="status"></div>
-<div id="inputs"></div>
-<p class="note">Saved in this browser only. Nominal rupees; no indexation, GST or professional fees.</p>
-</aside>
-<main>
 <section class="hero">
   <div class="eyebrow">At the assumptions on the left</div>
   <div class="tiles">
@@ -110,11 +103,19 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
   </div>
   <p class="hero-foot" id="h-foot"></p>
 </section>
+<aside>
+<div class="heading"><h2>Assumptions</h2></div>
+<div class="actions"><button id="reset">Reset</button><button id="save">Save</button><button id="load">Load</button></div>
+<div id="status" role="status"></div>
+<div id="inputs"></div>
+<p class="note">Saved in this browser only. Nominal rupees; no indexation, GST or professional fees.</p>
+</aside>
+<main>
 
 <section class="section">
   <div class="heading"><h2>Price ladder</h2><span class="note">Click a row to make it the ask</span></div>
   <div class="scroll"><table class="ladder"><thead><tr>
-    <th>Ask &#8377;/cent</th><th>Gross</th><th>LTCG tax</th><th>Net to us</th><th>vs floor</th><th>Their profit</th><th>Their IRR</th><th>Plots to break even</th><th>Plots for their target</th><th>Verdict</th>
+    <th>Ask &#8377;/cent</th><th>Gross</th><th>LTCG tax</th><th>Net to us</th><th>vs floor</th><th>Their profit</th><th>Their margin</th><th>Plots to break even</th><th>Verdict</th>
   </tr></thead><tbody id="ladder"></tbody></table></div>
   <div class="lever" id="lever"></div>
   <div class="field" style="margin-top:18px"><label for="rungs">Prices to compare (&#8377; per cent, comma separated)</label><input type="text" id="rungs" inputmode="numeric"></div>
@@ -122,7 +123,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 
 <section class="section">
   <h2>Does the ask survive a worse plot market?</h2>
-  <p class="note">Their annual return at each combination. Green clears their target, amber is positive but short, red loses money. The outlined column is the plot price we are currently assuming.</p>
+  <p class="note">What they make on everything they spend, at each combination. Green is 25% or better, amber 12%, orange positive but thin, red a loss. The outlined column is the plot price we are currently assuming.</p>
   <div class="scroll" id="matrix"></div>
 </section>
 
@@ -172,7 +173,7 @@ function bisect(fn,increasing){let lo=0,hi=100000;const a=fn(lo);if(increasing?a
 function solve(p){return{breakEven:bisect(x=>calculate({...p,plotPrice:x},false).profit,true),hurdlePrice:bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true),ceiling:bisect(x=>npv(calculate({...p,landPrice:x},false).eq,p.hurdle/100),false)}}
 </script>
 <script>
-const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:320000};
+const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:80000000,share:54};
 const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
 const fields=[
 ['Our side',[
@@ -183,8 +184,7 @@ const fields=[
 ]],
 ['What we assume about them',[
  ['plotPrice','Plot price they achieve','₹ / layout cent',0,1000000,5000,'Price per saleable cent in the finished layout. The one number that decides whether our ask is payable.'],
- ['dev','Development budget','₹ total',0,100000000,100000,'Conversion, approvals and civil works before contingency. The brief expects about ₹350 per saleable sq ft, which is roughly ₹10.2 cr at 50% saleable.'],
- ['hurdle','Their target return','% / year',0,50,.5,'Annual return on their own money that they need to sign.']
+ ['dev','Development budget','₹ total',0,150000000,100000,'Conversion, approvals and civil works before contingency. The brief expects about ₹350 per saleable sq ft.']
 ]],
 ['Their detail',[
  ['stamp','Stamp duty + registration','%',0,15,.1,'Buyer acquisition charges as a percentage of land value.'],
@@ -217,15 +217,14 @@ const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
 
 // Plot price at which the buyer's profit is exactly zero. Depends on no target return.
 function breakEvenPlot(p){return bisect(x=>calculate({...p,plotPrice:x},false).profit,true)}
-// Plot price at which the buyer hits their target annual return. Moves with the hurdle input.
-function requiredPlot(p){return bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true)}
-function verdict(v,hurdle){
- if(v==null)return['No return','c-red'];
- if(v>=hurdle)return['Clears their bar','c-green'];
- if(v>=hurdle*.6)return['Thin','c-amber'];
- if(v>0)return['Weak','c-orange'];
+// Banded on profit over total spend, so no target return is assumed anywhere.
+const BANDS=[[.25,'Comfortable','c-green'],[.12,'Workable','c-amber'],[0,'Thin','c-orange']];
+function verdict(roi){
+ if(roi==null)return['No figure','c-red'];
+ for(const[floor,label,cls]of BANDS)if(roi>floor)return[label,cls];
  return['Loses money','c-red'];
 }
+function band(roi){return roi==null?'#eef1f3':roi>.25?'#d4eddf':roi>.12?'#fff0ce':roi>0?'#ffe2cd':'#f9dddd'}
 
 // Rupee amounts and the area read better grouped, but <input type=number> cannot show
 // separators, so those fields are text boxes that parse digits and reformat on blur.
@@ -235,7 +234,7 @@ const grouped=k=>{const m=META.get(k);return !!m&&(m[2].includes('\u20b9')||k===
 const show=k=>grouped(k)?fmt.format(state[k]):String(state[k]);
 
 function buildInputs(){
- $('inputs').innerHTML=fields.map(([group,fs],i)=>`<details class="group" ${i<2?'open':''}><summary>${group}</summary>${fs.map(([k,label,unit,min,max,step,tip])=>{
+ $('inputs').innerHTML=fields.map(([group,fs])=>`<details class="group" open><summary>${group}</summary>${fs.map(([k,label,unit,min,max,step,tip])=>{
   const box=grouped(k)
    ?`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${show(k)}" aria-describedby="${k}-unit">`
    :`<input id="${k}" type="number" min="${min}" max="${max}" step="${step}" value="${state[k]}" aria-describedby="${k}-unit">`;
@@ -267,7 +266,7 @@ function buildInputs(){
 }
 
 function render(){
- const p=state,r=calculate(p),need=requiredPlot(p),even=breakEvenPlot(p),atFloor=calculate({...p,landPrice:p.floor});
+ const p=state,r=calculate(p),even=breakEvenPlot(p),atFloor=calculate({...p,landPrice:p.floor});
  const overFloor=r.net-atFloor.net;
 
  const devRate=r.saleable?r.dev/(r.saleable*435.6):0;
@@ -290,30 +289,32 @@ function render(){
 
  const rows=rungs.map(price=>{
   const q={...p,landPrice:price},c=calculate(q);
-  return{price,c,need:requiredPlot(q),even:breakEvenPlot(q),delta:c.net-atFloor.net};
+  return{price,c,even:breakEvenPlot(q),delta:c.net-atFloor.net};
  });
- $('ladder').innerHTML=rows.map(({price,c,need,even,delta})=>{
-  const[label,cls]=verdict(c.eqIRR,p.hurdle/100);
+ $('ladder').innerHTML=rows.map(({price,c,even,delta})=>{
+  const[label,cls]=verdict(c.roi);
   const isFloor=Math.abs(price-p.floor)<1;
+  const cushion=even==null||!even?null:p.plotPrice/even-1;
   return `<tr class="${price===p.landPrice?'here':''}" data-price="${price}" tabindex="0">`+
    `<td>${exact(price)}${isFloor?' <span class="tag">floor</span>':''}</td><td>${money(c.land)}</td><td>${money(c.tax)}</td>`+
    `<td class="net">${money(c.net)}</td><td class="${delta>0?'positive':delta<0?'negative':''}">${Math.abs(delta)<1?'—':signed(delta)}</td>`+
-   `<td>${money(c.profit)}</td><td>${pct(c.eqIRR)}</td><td>${lakh(even)}</td><td>${lakh(need)}</td><td><span class="chip ${cls}">${label}</span></td></tr>`;
+   `<td>${money(c.profit)}</td><td>${pct(c.roi)}</td>`+
+   `<td title="${cushion==null?'':'Our '+lakh(p.plotPrice)+' assumption sits '+(cushion*100).toFixed(0)+'% above this'}">${lakh(even)}</td>`+
+   `<td><span class="chip ${cls}">${label}</span></td></tr>`;
  }).join('');
 
- const step=10000,up=requiredPlot({...p,landPrice:p.landPrice+step}),netStep=calculate({...p,landPrice:p.landPrice+step}).net-r.net;
- $('lever').innerHTML=(need==null||up==null)?
+ const step=10000,up=breakEvenPlot({...p,landPrice:p.landPrice+step}),netStep=calculate({...p,landPrice:p.landPrice+step}).net-r.net;
+ $('lever').innerHTML=(even==null||up==null)?
   `Every extra ${exact(step)} per cent on the ask puts ${money(netStep)} more in our pocket after tax.`:
-  `<strong>The lever.</strong> Every extra ${exact(step)} per cent on the ask is ${money(netStep)} more to us after tax &mdash; and it needs ${exact(up-need)} more per cent on their plot prices. `+
-  `Asking for &#8377;1 of land price costs them &#8377;${((up-need)/step).toFixed(1)} of plot price they have to go and find.`;
+  `<strong>The lever.</strong> Every extra ${exact(step)} per cent on the ask is ${money(netStep)} more to us after tax &mdash; and it lifts the plot price they must clear by ${exact(up-even)} per layout cent. `+
+  `Asking for &#8377;1 of land price costs them &#8377;${((up-even)/step).toFixed(1)} of plot price they have to go and find.`;
 
  const plotCols=[250000,300000,350000,400000,450000,500000];
  $('matrix').innerHTML=`<table class="heat"><caption>Our ask per cent (down) against the plot price per layout cent they achieve (across)</caption>`+
   `<thead><tr><th>Ask &darr; / Layout cent &rarr;</th>${plotCols.map(x=>`<th>${lakh(x)}</th>`).join('')}</tr></thead><tbody>`+
   rungs.map(price=>`<tr><th>${exact(price)}</th>${plotCols.map(x=>{
-   const v=calculate({...state,landPrice:price,plotPrice:x}).eqIRR;
-   const bg=v==null?'#eef1f3':v>=state.hurdle/100?'#d4eddf':v>=0?'#fff0ce':'#f9dddd';
-   return `<td class="${Math.abs(x-state.plotPrice)<2500?'ask':''}" style="background:${bg}" title="${exact(price)} per cent against plots at ${lakh(x)} per layout cent: their return is ${pct(v)}">${pct(v)}</td>`;
+   const v=calculate({...state,landPrice:price,plotPrice:x},false).roi;
+   return `<td class="${Math.abs(x-state.plotPrice)<2500?'ask':''}" style="background:${band(v)}" title="${exact(price)} per cent against plots at ${lakh(x)} per layout cent: they make ${pct(v)} on what they spend">${pct(v)}</td>`;
   }).join('')}</tr>`).join('')+`</tbody></table>`;
 
  $('seller-detail').innerHTML=[
@@ -366,11 +367,10 @@ function drawChart(rows){
 
 function heat2(){
  const ys=[18,24,36,48,60],xs=[8,10,12,14,16,18];
- $('heat2').innerHTML=`<table class="heat"><caption>Sell-out duration (down) against annual interest (across)</caption><thead><tr><th>Months &darr; / Rate &rarr;</th>${xs.map(x=>`<th>${x}%</th>`).join('')}</tr></thead><tbody>`+
+ $('heat2').innerHTML=`<table class="heat"><caption>Sell-out duration (down) against annual interest (across), shaded by their margin</caption><thead><tr><th>Months &darr; / Rate &rarr;</th>${xs.map(x=>`<th>${x}%</th>`).join('')}</tr></thead><tbody>`+
   ys.map(y=>`<tr><th>${y} mo</th>${xs.map(x=>{
-   const v=calculate({...state,salesMonths:y,interest:x}).eqIRR;
-   const bg=v==null?'#eef1f3':v>=state.hurdle/100?'#d4eddf':v>=0?'#fff0ce':'#f9dddd';
-   return `<td style="background:${bg}" title="${y} months at ${x}%: their return is ${pct(v)}">${pct(v)}</td>`;
+   const v=calculate({...state,salesMonths:y,interest:x},false).roi;
+   return `<td style="background:${band(v)}" title="${y} months at ${x}%: they make ${pct(v)} on what they spend">${pct(v)}</td>`;
   }).join('')}</tr>`).join('')+`</tbody></table>`;
 }
 

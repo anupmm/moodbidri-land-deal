@@ -10,26 +10,24 @@ Everything on the page is driven by the assumptions panel on the left and recomp
 
 - **Hero** — our ask, gross to us, net after tax, the development cost with its per-sq-ft rate, and the buyer's profit. Underneath, the plot price at which the buyer breaks even.
   - The development rate divides by the **saleable** area only, not the whole parcel. At 50% saleable it is twice the whole-parcel figure. The tile prints its own denominator so this cannot be misread.
-  - The buyer's profit carries two percentages. The first is that profit over everything they spend, a plain margin with no timing in it. The second is the compounded annual return on their own cash, which is much lower because the money sits in the ground for about four years. ₹2.14 cr on ₹20.91 cr is 10.2% total, but only 4.6% a year.
+  - The buyer's profit carries two percentages. The first is that profit over everything they spend, a plain margin with no timing in it. The second is the compounded annual return on their own cash, which is much lower because the money sits in the ground for about four years.
 - **Price ladder** — one row per asking price (default ₹80k / ₹1L / ₹1.1L / ₹1.2L / ₹1.5L, editable in the text box). Click a row to make it the ask.
-- **Matrix** — every ask against plot prices from ₹2.5 L to ₹5 L, coloured by the buyer's return. The outlined column is the plot price currently assumed.
+- **Matrix** — every ask against plot prices from ₹2.5 L to ₹5 L, coloured by the buyer's margin. The outlined column is the plot price currently assumed.
 - **Our money** — the tax working, plus net per cent and per acre.
 - **Their model, in full** — collapsed. Cost waterfall, cumulative cash chart, sell-out against interest, monthly flows and conventions, unchanged from the root file.
 
-## The two solver columns in the ladder
+## No assumed target return
 
-These answer different questions and only one of them involves a target return.
+Nothing on this page assumes what return the buyer wants. There is no hurdle input and no IRR target. Two things replace it:
 
-- **Plots to break even** — the plot price at which the buyer's profit is exactly zero, after land, stamp duty, development, brokerage and interest. It carries no assumption about what return they want. Below this price they lose money outright.
-- **Plots for their target** — the plot price at which the discounted value of their equity cash flows is zero at the hurdle rate in the left panel (20% by default). This moves when the hurdle moves. Lower the hurdle and the number drops.
-
-Neither is solved against the ₹80,000 floor or any other asking price. Each row solves for its own ask.
+- **Plots to break even** — the plot price at which their profit is exactly zero, after land, stamp duty, development, brokerage and interest. Each row solves for its own ask. Below this price they lose money outright; the cell's tooltip says how far our assumed plot price sits above it.
+- **Their margin** — profit over everything they spend. The verdict chip and both heatmaps band on this: above 25% comfortable, above 12% workable, positive but below that thin, otherwise a loss. Those bands are a judgement about what a developer will tolerate, not a solved number — change `BANDS` in the page source to move them.
 
 ## The two numbers that matter
 
 Our net is linear in the ask and independent of every buyer assumption: at 14.95% on a zero basis, each ₹10,000 per cent is ₹1.334 cr gross and ₹1.134 cr net. Nothing the buyer does changes it.
 
-Their side moves with one number, the plot price. Each ₹1 we add to the land price needs about ₹3.4 more on their plot price — the page computes this lever live rather than hard-coding it.
+Their side moves with one number, the plot price. Each ₹1 we add to the land price lifts the plot price they must clear by about ₹2.04 — roughly one over the saleable share, grossed up for stamp duty and brokerage. The page computes this lever live rather than hard-coding it.
 
 ## The input panel
 
@@ -41,15 +39,17 @@ Save writes the assumptions and the ladder rungs to this browser's local storage
 
 ## Validation
 
-At the defaults (1,334 cents, ask ₹1,00,000, plots ₹3.20 L per layout cent, development ₹3 cr, zero cost basis, 20% hurdle, no debt): gross ₹13.34 cr, tax ₹1.99433 cr, net to us ₹11.34567 cr, buyer profit ₹3.48 cr at 8.3% a year, break-even plot price ₹2,66,162 and ₹4,02,934 for the 20% target, lever 3.40×.
+Defaults: 1,334 cents, ask ₹1,00,000, floor ₹80,000, plots ₹3,30,000 per layout cent, development ₹8 cr, 54% saleable, zero cost basis, no debt.
 
-At an ask of ₹85,000: gross ₹11.34 cr, tax ₹1.70 cr, net ₹9.64 cr, buyer profit ₹5.62 cr at 14.9% a year.
+At those defaults: gross ₹13.34 cr, tax ₹1.99433 cr, net to us ₹11.34567 cr. Saleable area 720.36 cents (3,13,789 sq ft), development ₹255 per saleable sq ft. Buyer profit ₹83.83 L, a 3.7% margin and 1.7% a year. Break-even plot price ₹3,18,003. Lever 2.04×.
+
+At an ask of ₹80,000: buyer profit ₹3.68 cr, an 18.3% margin, break-even ₹2,77,301.
 
 The cost basis is fixed at zero and has no input control, so the tax is always 14.95% of the gross. Restore the `basis` field in `fields` if that ever changes.
 
 ## Known inconsistency in the brief's defaults
 
-The ₹3 cr development budget works out to ₹103 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.17 cr and the buyer's profit at an ₹85,000 ask would fall from ₹5.62 cr to a loss of ₹1.55 cr. The hero tile prints the implied rate against its own denominator, so it is visible without a banner. Settle this number before trusting any verdict on the ladder.
+The default ₹8 cr budget is ₹255 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.98 cr, about ₹3 cr more cost, which lands directly on what the buyer can pay us. The hero tile prints the implied rate against its own denominator so it is visible at a glance. Settle this number before trusting any verdict on the ladder.
 
 ## Keeping the model in sync
 
@@ -57,7 +57,7 @@ The ₹3 cr development budget works out to ₹103 per saleable sq ft, against t
 
 ## On mobile
 
-The layout stacks below 820px and puts the results above the assumptions panel, so a phone does not open on a wall of sliders. Wide tables scroll sideways with the asking-price column pinned in place. The assumption groups stay collapsed except the first two.
+The layout stacks below 820px in the order hero, assumptions, then everything else, so the numbers and the knobs that move them sit together. The hero is a grid sibling of the panel rather than a child of `main`, which is what makes that reordering possible. Wide tables scroll sideways with the asking-price column pinned in place. All three assumption groups are open by default.
 
 ## Hosting
 
