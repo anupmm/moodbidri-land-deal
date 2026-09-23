@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Seller-side scenario analysis for the Moodbidri land sale: what each asking price nets us, and what the buyer must believe to pay it."><title>Moodbidri | Seller's view</title>
+<style>
+:root{--ink:#172e38;--muted:#596e76;--line:#dce4e7;--blue:#1464d2;--bg:#f0f4f7;--green:#16704e;--red:#aa3535}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+header{background:#142e3a;color:white;padding:25px 4vw;display:flex;justify-content:space-between;align-items:center;gap:20px}
+h1{font-size:25px;margin:2px 0}h2{font-size:19px;margin:0 0 16px}p{margin:8px 0}
+small,.muted{color:var(--muted)}header small{color:#b5c9d4}
+.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:750}
+.layout{display:grid;grid-template-columns:330px minmax(0,1fr);max-width:1660px;margin:auto;gap:24px;padding:24px}
+aside{background:white;border:1px solid var(--line);border-radius:12px;align-self:start;padding:20px}
+main{min-width:0}
+.section{background:white;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:20px}
+.hero{background:#164dc0;color:white;border-radius:12px;padding:26px;margin-bottom:20px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:22px 26px;margin-top:16px}
+.tiles>div{min-width:0}
+.tiles span{display:block;font-size:13px;color:#c3d5f8;font-weight:600}
+.tiles strong{display:block;font-size:clamp(23px,2.5vw,34px);font-weight:720;letter-spacing:-.03em;margin:5px 0 4px;white-space:nowrap}
+.tiles small{display:block;color:#dbe5f7;font-size:13px;line-height:1.45}
+.hero-foot{margin:20px 0 0;padding-top:16px;border-top:1px solid rgba(255,255,255,.25);color:#e2eafc;font-size:15px}
+button{cursor:pointer;border:1px solid #c5d2da;border-radius:7px;background:white;color:var(--ink);font:600 14px system-ui;padding:10px 13px}
+button:hover{background:#edf3fb}button.primary{background:var(--blue);border-color:var(--blue);color:white}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+label{display:block;font-size:14px;font-weight:600;margin-bottom:7px}
+details.group[open] summary{margin-bottom:4px}
+.field{margin:0;padding:13px 0;border-top:1px solid #eef2f4}
+.field:first-of-type{border-top:0}
+label{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px;font-weight:600;margin-bottom:6px}
+.inputline{display:flex;align-items:center;gap:8px}
+.inputline input{flex:1;min-width:0;padding:7px 9px;font:15px system-ui;border:1px solid #b7c8d1;border-radius:5px}
+.unit{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--blue);margin-top:8px}
+input[type=text]{padding:7px 9px;font:15px system-ui;border:1px solid #b7c8d1;border-radius:5px;width:100%;max-width:360px}
+input:focus-visible,button:focus-visible,summary:focus-visible,tr:focus-visible{outline:3px solid #78abf8;outline-offset:2px}
+details.group{border-bottom:1px solid var(--line);padding:12px 0}
+summary{cursor:pointer;font-weight:700}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--muted)}
+.scroll{overflow:auto;-webkit-overflow-scrolling:touch}
+.positive{color:var(--green)}.negative{color:var(--red)}
+.ladder tbody tr{cursor:pointer}
+.ladder tbody tr:hover{background:#f2f7fd}
+.ladder tr.here{background:#eaf2fe;box-shadow:inset 3px 0 0 var(--blue)}
+.ladder .net{font-weight:700}
+.tag{color:var(--muted);font-size:12px;font-weight:400}
+.chip{display:inline-block;padding:3px 9px;border-radius:99px;font-size:13px;font-weight:600}
+.c-green{background:#d4eddf;color:#10553c}.c-amber{background:#fff0ce;color:#7a5808}
+.c-orange{background:#ffe2cd;color:#8a4413}.c-red{background:#f9dddd;color:#8c2c2c}
+.lever{background:#f5f8fa;border-left:3px solid var(--blue);padding:14px 18px;border-radius:0 8px 8px 0;font-size:15px;margin-top:18px}
+.heat td{border:3px solid white;text-align:right}
+.heat td.ask{outline:2px solid var(--blue);outline-offset:-3px}
+.heat caption{text-align:left;margin-bottom:12px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{padding:17px;background:#f5f8fa;border-radius:8px}
+.card strong{display:block;font-size:24px;margin-top:7px;letter-spacing:-.03em}
+.card span{font-size:14px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:22px}
+.stats strong{display:block;font-size:21px}.stats span{font-size:14px;color:var(--muted)}
+.legend{display:flex;gap:15px;font-size:13px;margin:12px 0}
+.legend i{width:12px;height:12px;display:inline-block;margin-right:5px}
+.chart{width:100%;height:260px}
+.note{font-size:14px;color:var(--muted)}
+.heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
+.heading h2{margin:0}
+#status{font-size:14px;min-height:22px;margin-top:10px}
+footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var(--muted)}
+@media(max-width:1100px){.layout{grid-template-columns:290px minmax(0,1fr);gap:16px;padding:16px}.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){
+ header{padding:18px 16px;align-items:start}
+ h1{font-size:22px}h2{font-size:17px}
+ .layout{display:flex;flex-direction:column;padding:14px;gap:14px}
+ /* Numbers before knobs: on a phone the panel would otherwise bury the results. */
+ main{order:1}aside{order:2;width:100%}
+ .section,aside{padding:16px}
+ .hero{padding:18px}
+ .tiles{gap:16px 20px;margin-top:12px}
+ .tiles strong{font-size:26px}
+ .stats{grid-template-columns:repeat(2,1fr);gap:14px}
+ table{font-size:13px}
+ th,td{padding:8px 9px}
+ /* Keep the ask column pinned while the rest of a wide table scrolls sideways. */
+ .ladder th:first-child,.ladder td:first-child,.heat th:first-child{position:sticky;left:0;background:white;z-index:1}
+ .ladder tr.here th:first-child,.ladder tr.here td:first-child{background:#eaf2fe}
+ .heat th:first-child{background:white}
+ .chart{height:220px}
+ footer{padding:0 16px 24px}
+}
+</style></head><body>
+<header><div><small class="eyebrow">Moodbidri &middot; Dakshina Kannada</small><h1>Seller's view</h1><small>What each asking price nets us, and what the buyer has to believe to pay it.</small></div></header>
+<div class="layout">
+<aside>
+<div class="heading"><h2>Assumptions</h2></div>
+<div class="actions"><button id="reset">Reset</button><button id="save">Save</button><button id="load">Load</button></div>
+<div id="status" role="status"></div>
+<div id="inputs"></div>
+<p class="note">Saved in this browser only. Nominal rupees; no indexation, GST or professional fees.</p>
+</aside>
+<main>
+<section class="hero">
+  <div class="eyebrow">At the assumptions on the left</div>
+  <div class="tiles">
+    <div title="The price per cent we are testing. Everything else on the page follows from it."><span>Our ask</span><strong id="h-ask">&mdash;</strong><small id="h-ask-sub"></small></div>
+    <div title="Area times the ask. The cheque before any tax."><span>Gross to us</span><strong id="h-gross">&mdash;</strong></div>
+    <div title="Gross less long-term capital gains tax, taken at a zero cost basis."><span>Net after tax</span><strong id="h-net">&mdash;</strong><small id="h-net-sub"></small></div>
+    <div title="What the buyer spends on conversion, approvals and civil works, divided by the saleable area only. Roads, parks and civic amenity sites are excluded from the denominator, so the rate is higher than a whole-parcel figure."><span>Development cost</span><strong id="h-dev">&mdash;</strong><small id="h-dev-sub"></small></div>
+    <div title="Gross plot sales less land, stamp duty, development, brokerage and interest. The percentage is that profit over everything they spend; the yearly figure is the compounded annual return on their own cash, which is lower because the money is tied up for years."><span>Their profit</span><strong id="h-profit">&mdash;</strong><small id="h-profit-sub"></small></div>
+  </div>
+  <p class="hero-foot" id="h-foot"></p>
+</section>
+
+<section class="section">
+  <div class="heading"><h2>Price ladder</h2><span class="note">Click a row to make it the ask</span></div>
+  <div class="scroll"><table class="ladder"><thead><tr>
+    <th>Ask &#8377;/cent</th><th>Gross</th><th>LTCG tax</th><th>Net to us</th><th>vs floor</th><th>Their profit</th><th>Their IRR</th><th>Plots to break even</th><th>Plots for their target</th><th>Verdict</th>
+  </tr></thead><tbody id="ladder"></tbody></table></div>
+  <div class="lever" id="lever"></div>
+  <div class="field" style="margin-top:18px"><label for="rungs">Prices to compare (&#8377; per cent, comma separated)</label><input type="text" id="rungs" inputmode="numeric"></div>
+</section>
+
+<section class="section">
+  <h2>Does the ask survive a worse plot market?</h2>
+  <p class="note">Their annual return at each combination. Green clears their target, amber is positive but short, red loses money. The outlined column is the plot price we are currently assuming.</p>
+  <div class="scroll" id="matrix"></div>
+</section>
+
+<section class="section">
+  <h2>Our money, in full</h2>
+  <div class="scroll"><table><thead><tr><th>Line</th><th>Amount</th><th>Working</th></tr></thead><tbody id="seller-detail"></tbody></table></div>
+  <p class="note" id="tds"></p>
+</section>
+
+<section class="section"><details id="buyer-fold">
+  <summary>Their model, in full</summary>
+  <p class="note" id="layout-note" style="margin-top:14px"></p>
+  <div class="grid" id="buyer"></div>
+  <div class="stats" id="returns"></div>
+
+  <h2 style="margin-top:30px">Where their money goes</h2>
+  <div class="scroll"><table><thead><tr><th>Component</th><th>Amount</th><th>Calculation</th></tr></thead><tbody id="waterfall"></tbody></table></div>
+
+  <h2 style="margin-top:30px">Their cumulative cash position</h2>
+  <div class="legend"><span><i style="background:#1464d2"></i>Equity</span><span><i style="background:#879ba5"></i>Unlevered</span></div>
+  <svg id="chart" class="chart" role="img" aria-label="Cumulative equity and unlevered cash flows by month" viewBox="0 0 900 260"></svg>
+
+  <h2 style="margin-top:30px">Sell-out speed against interest</h2>
+  <div class="scroll" id="heat2"></div>
+  <p class="note" id="debt-note"></p>
+
+  <details style="margin-top:24px"><summary>Monthly cash flows</summary>
+    <p class="note">All amounts in &#8377; lakh. Interest is capitalized; net sales repay debt first. Any remaining debt is settled by equity in the final buffer month.</p>
+    <div class="scroll"><table><thead><tr><th>Month</th><th>Land + duty</th><th>Development</th><th>Gross sales</th><th>Brokerage</th><th>Loan draws</th><th>Interest</th><th>Debt repaid</th><th>Debt balance</th><th>Unlevered</th><th>Equity</th><th>Cumul. equity</th></tr></thead><tbody id="flows"></tbody></table></div>
+  </details>
+
+  <details style="margin-top:16px"><summary>Conventions</summary>
+    <p class="note">Land and stamp duty are paid at month 0. Development spends from its start month through start + duration &minus; 1; sales follow the same convention, then three buffer months. Approval duration is a planning check, not an automatic delay.</p>
+    <p class="note">Monthly interest = opening loan balance &times; annual rate &divide; 12, capitalized before draws and repayment. Sale proceeds after brokerage repay debt first. Annual IRR compounds the monthly return. Hurdle solvers use equity NPV at the target rate, so they still work when IRR is undefined.</p>
+    <p class="note">Our tax line is a modelling assumption from the brief (12.5% &times; 1.15 surcharge &times; 1.04 cess &asymp; 14.95% on the gain above basis), not a determination of liability. The buyer's 1% TDS is an advance credit against it, not a second tax. No buyer income tax, GST or holding costs are modelled.</p>
+  </details>
+</details></section>
+</main></div>
+<footer>1 acre = 100 cents &middot; 1 cent = 435.6 sq ft &middot; 1 lakh = &#8377;1,00,000 &middot; 1 crore = &#8377;1,00,00,000</footer>
+<script id="model">
+'use strict';
+const DEFAULTS={area:1334,landPrice:80000,basis:0,tax:14.95,stamp:6.6,share:50,plotSize:5,dev:30000000,contingency:0,approval:9,devStart:3,devMonths:12,salesStart:12,salesMonths:36,growth:0,plotPrice:300000,broker:3,landDebt:0,devDebt:0,interest:12,hurdle:20};
+function npv(flows,annual){const q=Math.pow(1+annual,1/12);let d=1,v=0;for(const f of flows){v+=f/d;d*=q}return v}
+function irr(flows){if(!flows.some(x=>x<0)||!flows.some(x=>x>0))return null;let changes=0,last=0;for(const f of flows){const s=Math.sign(f);if(s&&last&&s!==last)changes++;if(s)last=s}if(changes!==1)return null;let lo=-.9999,hi=1;while(npv(flows,hi)>0&&hi<1e6)hi*=2;if(npv(flows,lo)<0||npv(flows,hi)>0)return null;for(let i=0;i<80;i++){let m=(lo+hi)/2;if(npv(flows,m)>0)lo=m;else hi=m}return (lo+hi)/2}
+function calculate(p,withIRR=true){const land=p.area*p.landPrice,stamp=land*p.stamp/100,baseDev=p.dev,dev=baseDev*(1+p.contingency/100),saleable=p.area*p.share/100;const end=Math.max(p.devStart+p.devMonths,p.salesStart+p.salesMonths)+3,rows=[];let debt=0,revenue=0,brokerage=0,interest=0,cum=0,cumU=0,peak=0;for(let m=0;m<=end;m++){const acquisition=m===0?land+stamp:0;const development=m>=p.devStart&&m<p.devStart+p.devMonths?dev/p.devMonths:0;const sales=m>=p.salesStart&&m<p.salesStart+p.salesMonths?saleable*p.plotPrice/p.salesMonths*Math.pow(1+p.growth/100,(m-p.salesStart)/12):0;const fee=sales*p.broker/100;const draw=(m===0?land*p.landDebt/100:0)+development*p.devDebt/100;const int=debt*p.interest/1200;debt+=int+draw;let repayment=Math.min(debt,sales-fee);if(m===end)repayment=debt;debt-=repayment;const u=-acquisition-development+sales-fee,e=u+draw-repayment;cum+=e;cumU+=u;peak=Math.max(peak,-cum);revenue+=sales;brokerage+=fee;interest+=int;rows.push({m,acquisition,development,sales,fee,draw,int,repayment,debt,u,e,cum,cumU})}const eq=rows.map(r=>r.e),un=rows.map(r=>r.u),cost=land+stamp+dev+brokerage+interest,profit=revenue-cost,paid=-eq.filter(x=>x<0).reduce((a,b)=>a+b,0),received=eq.filter(x=>x>0).reduce((a,b)=>a+b,0);let payback=null;for(let i=0;i<rows.length;i++)if(rows[i].cum>=-0.01&&rows.slice(i).every(r=>r.cum>=-0.01)&&rows.slice(0,i).some(r=>r.cum<0)){payback=i;break}const tax=Math.max(0,land-p.basis)*p.tax/100;return{land,stamp,baseDev,dev,saleable,plots:saleable/p.plotSize,revenue,brokerage,interest,cost,profit,roi:cost?profit/cost:null,eqIRR:withIRR?irr(eq):null,unIRR:withIRR?irr(un):null,multiple:paid?received/paid:null,peak,payback,tax,net:land-tax,tds:land*.01,rows,eq,un}}
+function bisect(fn,increasing){let lo=0,hi=100000;const a=fn(lo);if(increasing?a>=0:a<0)return increasing?0:null;while((increasing?fn(hi)<0:fn(hi)>0)&&hi<1e10)hi*=2;if(increasing?fn(hi)<0:fn(hi)>0)return null;for(let i=0;i<65;i++){const mid=(lo+hi)/2,v=fn(mid);if(increasing?v<0:v>0)lo=mid;else hi=mid}return(lo+hi)/2}
+function solve(p){return{breakEven:bisect(x=>calculate({...p,plotPrice:x},false).profit,true),hurdlePrice:bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true),ceiling:bisect(x=>npv(calculate({...p,landPrice:x},false).eq,p.hurdle/100),false)}}
+</script>
+<script>
+const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:320000};
+const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
+const fields=[
+['Our side',[
+ ['area','Parcel area','cents',1,5000,1,'1,334 cents is 13.34 acres.'],
+ ['landPrice','Our ask','₹ / cent',0,300000,5000,'The price being tested. Drives every number on this page.'],
+ ['floor','Our floor','₹ / cent',0,300000,5000,'The price we will not go below. Marked on the bar and in the ladder.'],
+ ['tax','Effective LTCG rate','%',0,40,.05,'Applied only to the gain above basis.']
+]],
+['What we assume about them',[
+ ['plotPrice','Plot price they achieve','₹ / layout cent',0,1000000,5000,'Price per saleable cent in the finished layout. The one number that decides whether our ask is payable.'],
+ ['dev','Development budget','₹ total',0,100000000,100000,'Conversion, approvals and civil works before contingency. The brief expects about ₹350 per saleable sq ft, which is roughly ₹10.2 cr at 50% saleable.'],
+ ['hurdle','Their target return','% / year',0,50,.5,'Annual return on their own money that they need to sign.']
+]],
+['Their detail',[
+ ['stamp','Stamp duty + registration','%',0,15,.1,'Buyer acquisition charges as a percentage of land value.'],
+ ['share','Saleable land','%',1,100,1,'Share left after roads, parks and civic amenities.'],
+ ['plotSize','Typical plot size','cents',.1,20,.1,'Used for the indicative plot count only.'],
+ ['contingency','Development contingency','%',0,50,1,'Added to the development budget.'],
+ ['broker','Brokerage + marketing','% of sales',0,20,.1,'Deducted from each month of gross sale receipts.'],
+ ['growth','Plot price growth','% / year',-20,30,.5,'Annual compounding from the first sale month.'],
+ ['approval','Conversion + approval','months',0,60,1,'Planning check; does not shift development or sales by itself.'],
+ ['devStart','Development starts','month',0,60,1,'First month of evenly spread development spending.'],
+ ['devMonths','Development duration','months',1,60,1,'Number of months with development spending.'],
+ ['salesStart','Plot sales start','month',0,120,1,'First month with sale receipts.'],
+ ['salesMonths','Sell-out duration','months',1,120,1,'Saleable land sells in equal monthly amounts.'],
+ ['landDebt','Debt-funded land','%',0,100,5,'Debt share of land price; excludes stamp duty.'],
+ ['devDebt','Debt-funded development','%',0,100,5,'Debt share of development including contingency.'],
+ ['interest','Loan interest','% / year',0,30,.5,'Monthly interest on opening debt, capitalized before repayments.']
+]]];
+
+let state={...SELLER_DEFAULTS},rungs=[...RUNGS_DEFAULT],timer;
+const $=id=>document.getElementById(id),fmt=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
+const money=n=>{
+ if(n==null)return'—';
+ const a=Math.abs(n);
+ return (n<0?'−':'')+'₹'+(a>=1e7?(a/1e7).toFixed(2)+' cr':a>=1e5?(a/1e5).toFixed(2)+' L':fmt.format(Math.round(a)));
+};
+const pct=n=>n==null?'—':(n*100).toFixed(1)+'%';
+const exact=n=>'₹'+fmt.format(Math.round(n));
+const lakh=n=>n==null?'—':'₹'+(n/1e5).toFixed(2)+' L';
+const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
+
+// Plot price at which the buyer's profit is exactly zero. Depends on no target return.
+function breakEvenPlot(p){return bisect(x=>calculate({...p,plotPrice:x},false).profit,true)}
+// Plot price at which the buyer hits their target annual return. Moves with the hurdle input.
+function requiredPlot(p){return bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true)}
+function verdict(v,hurdle){
+ if(v==null)return['No return','c-red'];
+ if(v>=hurdle)return['Clears their bar','c-green'];
+ if(v>=hurdle*.6)return['Thin','c-amber'];
+ if(v>0)return['Weak','c-orange'];
+ return['Loses money','c-red'];
+}
+
+// Rupee amounts and the area read better grouped, but <input type=number> cannot show
+// separators, so those fields are text boxes that parse digits and reformat on blur.
+const META=new Map();
+for(const[,fs]of fields)for(const f of fs)META.set(f[0],f);
+const grouped=k=>{const m=META.get(k);return !!m&&(m[2].includes('\u20b9')||k==='area')};
+const show=k=>grouped(k)?fmt.format(state[k]):String(state[k]);
+
+function buildInputs(){
+ $('inputs').innerHTML=fields.map(([group,fs],i)=>`<details class="group" ${i<2?'open':''}><summary>${group}</summary>${fs.map(([k,label,unit,min,max,step,tip])=>{
+  const box=grouped(k)
+   ?`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${show(k)}" aria-describedby="${k}-unit">`
+   :`<input id="${k}" type="number" min="${min}" max="${max}" step="${step}" value="${state[k]}" aria-describedby="${k}-unit">`;
+  return `<div class="field"><label for="${k}" title="${tip}">${label} &#9432;</label><div class="inputline">${box}<span id="${k}-unit" class="unit">${unit}</span></div><input type="range" id="${k}-range" aria-label="${label}" min="${min}" max="${max}" step="${step}" value="${state[k]}"></div>`;
+ }).join('')}</details>`).join('');
+
+ for(const[,fs]of fields)for(const[k,,u,min,max,step]of fs){
+  const clamp=v=>{v=Math.min(max,Math.max(min,v));return(u==='months'||u==='month')?Math.round(v):v};
+  const push=v=>{state[k]=clamp(v);clearTimeout(timer);timer=setTimeout(render,80)};
+  $(k).addEventListener('input',e=>{
+   const raw=grouped(k)?e.target.value.replace(/[^0-9.]/g,''):e.target.value;
+   if(raw===''||!Number.isFinite(+raw))return;
+   push(+raw);$(k+'-range').value=state[k];
+  });
+  // Reformat once the box loses focus, so separators never fight the caret mid-typing.
+  $(k).addEventListener('blur',()=>{$(k).value=show(k)});
+  // A text box loses the arrow-key nudge a number box gives for free, so put it back.
+  if(grouped(k))$(k).addEventListener('keydown',e=>{
+   const dir=e.key==='ArrowUp'?1:e.key==='ArrowDown'?-1:0;
+   if(!dir)return;
+   e.preventDefault();push(state[k]+dir*step);$(k).value=show(k);$(k+'-range').value=state[k];
+  });
+  $(k+'-range').addEventListener('input',e=>{
+   if(e.target.value===''||!Number.isFinite(+e.target.value))return;
+   push(+e.target.value);$(k).value=show(k);
+  });
+ }
+ $('rungs').value=rungs.join(', ');
+}
+
+function render(){
+ const p=state,r=calculate(p),need=requiredPlot(p),even=breakEvenPlot(p),atFloor=calculate({...p,landPrice:p.floor});
+ const overFloor=r.net-atFloor.net;
+
+ const devRate=r.saleable?r.dev/(r.saleable*435.6):0;
+ $('h-ask').textContent=exact(p.landPrice);
+ $('h-ask-sub').textContent=`per cent · ${fmt.format(p.area)} cents, ${(p.area/100).toFixed(2)} acres`;
+ $('h-gross').textContent=money(r.land);
+ $('h-net').textContent=money(r.net);
+ $('h-net-sub').textContent=`after ${money(r.tax)} tax, ${(r.land?r.tax/r.land*100:0).toFixed(1)}% of the sale`;
+ $('h-dev').textContent=money(r.dev);
+ $('h-dev-sub').textContent=`${exact(devRate)} per sq ft across the ${fmt.format(Math.round(r.saleable))} saleable cents (${fmt.format(Math.round(r.saleable*435.6))} sq ft), not the full ${fmt.format(p.area)}`;
+ $('h-profit').textContent=money(r.profit);
+ const years=Math.max(p.devStart+p.devMonths,p.salesStart+p.salesMonths)/12;
+ $('h-profit-sub').textContent=`${pct(r.roi)} on the ${money(r.cost)} they spend, earned over ${years.toFixed(1)} years — ${pct(r.eqIRR)} a year`;
+ $('h-foot').textContent=even==null?
+  `There is no plot price at which they break even on these assumptions.`:
+  `They break even at ${lakh(even)} per layout cent and we are assuming ${lakh(p.plotPrice)}. `+
+  (overFloor>0?`This ask is ${signed(overFloor)} to us over our ${exact(p.floor)} floor.`:
+   overFloor<0?`This ask is ${money(-overFloor)} below what our ${exact(p.floor)} floor would net.`:
+   `This ask is our ${exact(p.floor)} floor.`);
+
+ const rows=rungs.map(price=>{
+  const q={...p,landPrice:price},c=calculate(q);
+  return{price,c,need:requiredPlot(q),even:breakEvenPlot(q),delta:c.net-atFloor.net};
+ });
+ $('ladder').innerHTML=rows.map(({price,c,need,even,delta})=>{
+  const[label,cls]=verdict(c.eqIRR,p.hurdle/100);
+  const isFloor=Math.abs(price-p.floor)<1;
+  return `<tr class="${price===p.landPrice?'here':''}" data-price="${price}" tabindex="0">`+
+   `<td>${exact(price)}${isFloor?' <span class="tag">floor</span>':''}</td><td>${money(c.land)}</td><td>${money(c.tax)}</td>`+
+   `<td class="net">${money(c.net)}</td><td class="${delta>0?'positive':delta<0?'negative':''}">${Math.abs(delta)<1?'—':signed(delta)}</td>`+
+   `<td>${money(c.profit)}</td><td>${pct(c.eqIRR)}</td><td>${lakh(even)}</td><td>${lakh(need)}</td><td><span class="chip ${cls}">${label}</span></td></tr>`;
+ }).join('');
+
+ const step=10000,up=requiredPlot({...p,landPrice:p.landPrice+step}),netStep=calculate({...p,landPrice:p.landPrice+step}).net-r.net;
+ $('lever').innerHTML=(need==null||up==null)?
+  `Every extra ${exact(step)} per cent on the ask puts ${money(netStep)} more in our pocket after tax.`:
+  `<strong>The lever.</strong> Every extra ${exact(step)} per cent on the ask is ${money(netStep)} more to us after tax &mdash; and it needs ${exact(up-need)} more per cent on their plot prices. `+
+  `Asking for &#8377;1 of land price costs them &#8377;${((up-need)/step).toFixed(1)} of plot price they have to go and find.`;
+
+ const plotCols=[250000,300000,350000,400000,450000,500000];
+ $('matrix').innerHTML=`<table class="heat"><caption>Our ask per cent (down) against the plot price per layout cent they achieve (across)</caption>`+
+  `<thead><tr><th>Ask &darr; / Layout cent &rarr;</th>${plotCols.map(x=>`<th>${lakh(x)}</th>`).join('')}</tr></thead><tbody>`+
+  rungs.map(price=>`<tr><th>${exact(price)}</th>${plotCols.map(x=>{
+   const v=calculate({...state,landPrice:price,plotPrice:x}).eqIRR;
+   const bg=v==null?'#eef1f3':v>=state.hurdle/100?'#d4eddf':v>=0?'#fff0ce':'#f9dddd';
+   return `<td class="${Math.abs(x-state.plotPrice)<2500?'ask':''}" style="background:${bg}" title="${exact(price)} per cent against plots at ${lakh(x)} per layout cent: their return is ${pct(v)}">${pct(v)}</td>`;
+  }).join('')}</tr>`).join('')+`</tbody></table>`;
+
+ $('seller-detail').innerHTML=[
+  ['Gross consideration',r.land,`${fmt.format(p.area)} cents &times; ${exact(p.landPrice)}`],
+  ['&minus; Capital gains tax',r.tax,`${p.tax}% &times; the gain, taken at a zero cost basis`],
+  ['= Net to us',r.net,'What actually reaches the family'],
+  ['Net per cent',p.area?r.net/p.area:0,'Net &divide; parcel area'],
+  ['Net per acre',p.area?r.net/(p.area/100):0,'Net &divide; acres']
+ ].map(([a,b,c])=>`<tr><td>${a}</td><td title="${exact(b)}">${money(b)}</td><td>${c}</td></tr>`).join('');
+ $('tds').textContent=`The buyer withholds 1% TDS: ${money(r.tds)}. Cash at registration is ${money(r.land-r.tds)}, and that TDS is credited against the ${money(r.tax)} tax bill, not charged on top. `+
+  (r.tax>=r.tds?`Balance payable later: ${money(r.tax-r.tds)}.`:`Modelled refund due: ${money(r.tds-r.tax)}.`);
+
+ $('buyer').innerHTML=[['Their total cost',money(r.cost),'Land, stamp duty, development, brokerage and interest'],
+  ['Their gross sales',money(r.revenue),'Saleable area at the monthly plot prices'],
+  ['Their profit',money(r.profit)+' · '+pct(r.roi),'After financing, before their own taxes']]
+  .map(([a,b,t])=>`<div class="card" title="${t}"><span>${a} &#9432;</span><strong>${b}</strong></div>`).join('');
+ $('returns').innerHTML=[['Unlevered IRR',pct(r.unIRR),'Project return before financing'],
+  ['Equity IRR',pct(r.eqIRR),'Return on their own money after debt'],
+  ['Equity multiple',r.multiple==null?'—':r.multiple.toFixed(2)+'×','Cash back divided by cash in'],
+  ['Peak cash needed',money(r.peak),'Largest cumulative cash hole they must fund'],
+  ['Payback',r.payback==null?'Not reached':'Month '+r.payback,'First month their cash position stays positive']]
+  .map(([a,b,t])=>`<div title="${t}"><span>${a} &#9432;</span><strong>${b}</strong></div>`).join('');
+ $('layout-note').textContent=`${fmt.format(r.saleable)} saleable cents at ${p.share}% · ${r.plots.toFixed(1)} plots of ${p.plotSize} cents · development works out to ${exact(r.dev/(r.saleable*435.6))} per saleable sq ft (the brief expects ₹350, range ₹100–500).`;
+
+ $('waterfall').innerHTML=[['Gross plot sales',r.revenue,'Saleable cents at the monthly selling prices'],
+  ['&minus; Land purchase',r.land,`${fmt.format(p.area)} cents &times; ${exact(p.landPrice)}`],
+  ['&minus; Stamp duty &amp; registration',r.stamp,p.stamp+'% &times; land purchase'],
+  ['&minus; Base development',r.baseDev,'Entered development budget'],
+  ['&minus; Development contingency',r.dev-r.baseDev,p.contingency+'% &times; base development'],
+  ['&minus; Brokerage &amp; marketing',r.brokerage,p.broker+'% &times; gross sales'],
+  ['&minus; Loan interest',r.interest,'Sum of monthly interest on opening debt'],
+  ['= Their profit',r.profit,'Gross sales less all six components']]
+  .map(([a,b,c])=>`<tr><td>${a}</td><td title="${exact(b)}">${money(b)}</td><td>${c}</td></tr>`).join('');
+
+ drawChart(r.rows);
+ $('flows').innerHTML=r.rows.map(x=>`<tr title="Month ${x.m}: cumulative equity ${exact(x.cum)}"><td>${x.m}</td>${['acquisition','development','sales','fee','draw','int','repayment','debt','u','e','cum'].map(k=>`<td>${(x[k]/1e5).toFixed(2)}</td>`).join('')}</tr>`).join('');
+ heat2();
+ $('debt-note').textContent=p.landDebt===0&&p.devDebt===0?'Debt funding is 0%, so the interest rate changes nothing here. Raise the debt shares under Their detail to make this table bite.':'Includes drawdowns, monthly interest and repayments from sales.';
+}
+
+function drawChart(rows){
+ const values=rows.flatMap(r=>[r.cum,r.cumU]),min=Math.min(0,...values),max=Math.max(0,...values),span=max-min||1;
+ const x=m=>70+m/rows.at(-1).m*805,y=v=>225-(v-min)/span*205;
+ let svg='';
+ for(let i=0;i<=4;i++){const v=min+span*i/4;svg+=`<line x1="70" x2="875" y1="${y(v)}" y2="${y(v)}" stroke="#dce4e7"/><text x="60" y="${y(v)+4}" text-anchor="end" fill="#596e76" font-size="12">${(v/1e7).toFixed(1)} cr</text>`}
+ for(const[key,color]of[['cumU','#879ba5'],['cum','#1464d2']])svg+=`<polyline fill="none" stroke="${color}" stroke-width="3" points="${rows.map(r=>x(r.m)+','+y(r[key])).join(' ')}"/>`;
+ for(let i=0;i<=4;i++){const m=Math.round(rows.at(-1).m*i/4);svg+=`<text x="${x(m)}" y="250" text-anchor="middle" fill="#596e76" font-size="12">M${m}</text>`}
+ $('chart').innerHTML=svg;
+}
+
+function heat2(){
+ const ys=[18,24,36,48,60],xs=[8,10,12,14,16,18];
+ $('heat2').innerHTML=`<table class="heat"><caption>Sell-out duration (down) against annual interest (across)</caption><thead><tr><th>Months &darr; / Rate &rarr;</th>${xs.map(x=>`<th>${x}%</th>`).join('')}</tr></thead><tbody>`+
+  ys.map(y=>`<tr><th>${y} mo</th>${xs.map(x=>{
+   const v=calculate({...state,salesMonths:y,interest:x}).eqIRR;
+   const bg=v==null?'#eef1f3':v>=state.hurdle/100?'#d4eddf':v>=0?'#fff0ce':'#f9dddd';
+   return `<td style="background:${bg}" title="${y} months at ${x}%: their return is ${pct(v)}">${pct(v)}</td>`;
+  }).join('')}</tr>`).join('')+`</tbody></table>`;
+}
+
+function readRungs(text){
+ const seen=String(text).split(/[,\s]+/).map(s=>+s.replace(/[^0-9.]/g,'')).filter(n=>Number.isFinite(n)&&n>0&&n<=1e7);
+ const list=[...new Set(seen)].sort((a,b)=>a-b);
+ return list.length?list:[...RUNGS_DEFAULT];
+}
+function valid(p){return p&&fields.every(([,fs])=>fs.every(([k,,,min,max])=>typeof p[k]==='number'&&Number.isFinite(p[k])&&p[k]>=min&&p[k]<=max))&&['approval','devStart','devMonths','salesStart','salesMonths'].every(k=>Number.isInteger(p[k]))}
+
+function pick(price){state.landPrice=price;buildInputs();render()}
+
+$('rungs').addEventListener('input',e=>{rungs=readRungs(e.target.value);clearTimeout(timer);timer=setTimeout(render,120)});
+const KEY='moodbidri-seller-v1';
+// Returns the stored assumptions, or null if there are none and nothing usable.
+function stored(){try{
+ const data=JSON.parse(localStorage.getItem(KEY));
+ return data&&valid(data.state)&&Array.isArray(data.rungs)?data:null;
+}catch{return null}}
+function apply(data){state={...SELLER_DEFAULTS,...data.state};rungs=readRungs(data.rungs.join(','));buildInputs();render()}
+$('reset').onclick=()=>{
+ state={...SELLER_DEFAULTS};rungs=[...RUNGS_DEFAULT];buildInputs();render();
+ try{localStorage.removeItem(KEY)}catch{}
+ $('status').textContent='Back to defaults. Anything saved has been cleared.';
+};
+$('save').onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify({state,rungs}));$('status').textContent='Saved. This is what loads from now on.'}catch{$('status').textContent='This browser could not save.'}};
+$('load').onclick=()=>{const data=stored();if(!data){$('status').textContent='Nothing saved in this browser.';return}apply(data);$('status').textContent='Saved assumptions reloaded.'};
+
+document.addEventListener('click',e=>{
+ const row=e.target.closest&&e.target.closest('tr[data-price]');
+ if(row)pick(+row.dataset.price);
+});
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Enter'&&e.key!==' ')return;
+ const row=e.target.closest&&e.target.closest('tr[data-price]');
+ if(!row)return;
+ e.preventDefault();pick(+row.dataset.price);
+});
+document.addEventListener('change',e=>{const el=e.target;if(el.id&&META.has(el.id))el.value=show(el.id)});
+
+buildInputs();render();
+const saved=stored();
+if(saved){apply(saved);$('status').textContent='Loaded your saved assumptions. Reset restores the defaults.'}
+</script></body></html>

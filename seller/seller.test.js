@@ -1,0 +1,77 @@
+// Run from the repo root: node seller/seller.test.js
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=fs.readFileSync('index.html','utf8'),html=fs.readFileSync('seller/index.html','utf8');
+const MODEL=/<script id="model">([\s\S]*?)<\/script>/;
+const close=(a,b,t=1e-5)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
+
+// The seller view must carry the same model as the root modeler, character for character.
+assert.equal(html.match(MODEL)[1],root.match(MODEL)[1],'seller/index.html model block has drifted from index.html');
+
+const context={};vm.createContext(context);
+vm.runInContext(html.match(MODEL)[1]+'\nthis.api={DEFAULTS,calculate,solve,npv,irr,bisect};',context);
+const{DEFAULTS:D,calculate,npv,bisect}=context.api;
+const requiredPlot=p=>bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true);
+const breakEvenPlot=p=>bisect(x=>calculate({...p,plotPrice:x},false).profit,true);
+
+// Seller proceeds are linear in the ask and independent of every buyer assumption.
+const atFloor=calculate({...D,landPrice:80000});
+close(atFloor.land,106720000);close(atFloor.tax,15954640);close(atFloor.net,90765360);
+for(const price of[80000,100000,110000,120000,150000]){
+  const r=calculate({...D,landPrice:price});
+  close(r.land,1334*price);close(r.net,1334*price*(1-D.tax/100),1e-6);
+  close(r.net,calculate({...D,landPrice:price,plotPrice:500000,interest:18,salesMonths:60}).net,1e-6);
+}
+close(calculate({...D,landPrice:90000}).net-atFloor.net,1334*10000*(1-D.tax/100),1e-6);
+close(calculate({...D,landPrice:200000000/1334,basis:200000000}).tax,0);
+
+// Every rupee of ask needs about 3.4 rupees of plot price; the ladder's headline claim.
+const need=requiredPlot({...D,landPrice:100000});
+close(need,402933.64,1);
+const lever=(requiredPlot({...D,landPrice:110000})-need)/10000;
+assert.ok(lever>3.3&&lever<3.5,`lever ${lever} outside 3.3-3.5`);
+
+// Break-even carries no target return in it, unlike the required plot price.
+const even=breakEvenPlot({...D,landPrice:100000});
+close(calculate({...D,landPrice:100000,plotPrice:even}).profit,0,.1);
+assert.equal(even,breakEvenPlot({...D,landPrice:100000,hurdle:8}),'break-even must not move with the hurdle');
+assert.ok(even<need,'break-even must sit below the price that earns a positive return');
+assert.ok(requiredPlot({...D,landPrice:100000,hurdle:8})<need,'a lower hurdle must need a lower plot price');
+// Pin the denominator: at 50% saleable the rate is twice the whole-parcel figure.
+const half=calculate({...D,dev:60000000,share:50}),full=calculate({...D,dev:60000000,share:100});
+close(60000000/(half.saleable*435.6),206.51,.01);
+close(60000000/(full.saleable*435.6),103.25,.01);
+close(calculate({...D,dev:60000000,share:54}).saleable*435.6,313788.8,.1);
+console.log('Seller model checks passed. Lever = '+lever.toFixed(2)+'x, break-even = '+Math.round(even)+', for 20% = '+Math.round(need));
+
+// Smoke-render the UI against a DOM stub so template and id typos fail here, not in the browser.
+const nodes=new Map(),store=new Map();
+const node=()=>({addEventListener(){},innerHTML:'',textContent:'',value:'',dataset:{},closest(){return null}});
+context.document={getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},addEventListener(){}};
+context.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.has(k)?store.get(k):null,removeItem:k=>store.delete(k)};
+context.setTimeout=setTimeout;context.clearTimeout=clearTimeout;context.Intl=Intl;
+vm.runInContext([...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)][1][1],context);
+for(const id of['h-ask','h-gross','h-net','h-dev','h-profit','h-foot','ladder','lever','matrix','seller-detail','tds','waterfall','flows','heat2','chart','buyer','returns'])
+  assert.ok(nodes.get(id)&&(nodes.get(id).innerHTML||nodes.get(id).textContent),`#${id} rendered empty`);
+assert.match(nodes.get('h-ask').textContent,/1,00,000/);
+assert.match(nodes.get('h-gross').textContent,/13\.34 cr/);
+assert.match(nodes.get('h-net').textContent,/11\.35 cr/);
+assert.match(nodes.get('h-net-sub').textContent,/1.99 cr tax, 14.9% of the sale/);
+// The development rate must divide by saleable area only, never the whole parcel.
+assert.match(nodes.get('h-dev-sub').textContent,/₹103 per sq ft across the 667 saleable cents/);
+assert.match(nodes.get('h-profit-sub').textContent,/on the .* they spend, earned over 4\.0 years/);
+assert.match(nodes.get('h-foot').textContent,/break even at .* per layout cent/);
+assert.match(nodes.get('ladder').innerHTML,/data-price="150000"/);
+assert.match(nodes.get('ladder').innerHTML,/floor<\/span>/);
+assert.match(nodes.get('lever').innerHTML,/The lever/);
+assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
+// Rupee and area boxes carry Indian separators; everything else stays a plain number box.
+const panel=nodes.get('inputs').innerHTML;
+for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,20,000'],['dev','3,00,00,000'],['area','1,334']])
+  assert.ok(panel.includes(`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${v}"`),`${k} should be a grouped text box showing ${v}`);
+for(const k of['tax','hurdle','share','salesMonths','interest'])
+  assert.ok(panel.includes(`<input id="${k}" type="number"`),`${k} should stay a plain number box`);
+nodes.get('save').onclick();assert.ok(store.get('moodbidri-seller-v1'),'save wrote nothing');
+nodes.get('load').onclick();assert.match(nodes.get('status').textContent,/reloaded/);
+nodes.get('reset').onclick();assert.match(nodes.get('status').textContent,/cleared/);
+assert.equal(store.get('moodbidri-seller-v1'),undefined,'reset must clear the saved entry');
+console.log('UI render, ladder, hero and storage smoke checks passed.');
