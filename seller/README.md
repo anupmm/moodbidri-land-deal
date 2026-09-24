@@ -8,10 +8,10 @@ Everything on the page is driven by the assumptions panel on the left and recomp
 
 ## Layout
 
-- **Hero** — our ask, gross to us, net after tax, the development cost with its per-sq-ft rate, and the buyer's profit. Underneath, the plot price at which the buyer breaks even.
+- **Hero** (below the chart) — our ask, gross to us, net after tax, the development cost with its per-sq-ft rate, and the buyer's profit. Underneath, the plot price at which the buyer breaks even.
   - The development rate divides by the **saleable** area only, not the whole parcel. At 50% saleable it is twice the whole-parcel figure. The tile prints its own denominator so this cannot be misread.
   - The buyer's profit carries two percentages. The first is that profit over everything they spend, a plain margin with no timing in it. The second is the compounded annual return on their own cash, which is much lower because the money sits in the ground for about four years.
-- **Break-even curve** — the most the buyer can pay us per cent, plotted against the plot price they achieve. Below the line they make money, above it they lose it. Our ask, our floor and our assumed plot price are drawn on top. It is the ladder's solver read the other way round, and `seller.test.js` asserts the two agree.
+- **Break-even curve** (top of the page) — the most the buyer can pay us per cent, plotted against the plot price they achieve. Below the line they make money, above it they lose it. **The dot is draggable**: pull it along the line to set the assumed plot price, or focus it and use the arrow keys (Shift for a bigger step). On a mouse you can also click anywhere in the plot to jump it; on touch you must grab the dot, so the page can still be scrolled. Our ask and our floor sit as labelled tags on opposite edges to keep them apart. Three filters above the chart — development budget, saleable share, loan interest — mirror the left panel, and both stay in sync through `state`.
 - **Price ladder** — one row per asking price (default ₹80k / ₹1L / ₹1.1L / ₹1.2L / ₹1.5L, editable in the text box). Click a row to make it the ask.
 - **Matrix** — every ask against plot prices from ₹2.5 L to ₹5 L, coloured by the buyer's margin. The outlined column is the plot price currently assumed.
 - **Our money** — the tax working, plus net per cent and per acre.
@@ -34,9 +34,18 @@ Their side moves with one number, the plot price. Each ₹1 we add to the land p
 
 Rupee amounts and the parcel area are text boxes showing Indian separators (`3,00,00,000`), because `<input type="number">` cannot display grouping. They accept digits with or without commas, reformat on blur so separators never fight the caret while typing, and keep the arrow-key nudge that a number box would give for free. Percentages, months and plot size stay plain number boxes. The ladder's price list is deliberately ungrouped — commas are its separator there.
 
+## Keeping the drag smooth
+
+A naive redraw cost 482 ms a frame, almost all of it the 37 break-even solves behind the line. Two things fixed it:
+
+- **The curve does not depend on the plot price**, so dragging the marker must not rebuild it. `curvePoints` caches on a signature of exactly the inputs that move the line, and `evenPlot` caches the break-even plot price per ask. Change any of those inputs and both drop.
+- **`fastLand` and `fastPlot` replace the bisection with a secant.** Profit is very nearly linear in either price, so the root falls out in a handful of model calls where `bisect` needs eighty-odd. They fall back to `bisect` if they fail to converge, and the tests assert they agree with it to under a rupee across the whole plotted range, with debt on and off.
+
+That leaves about 24 ms a frame while dragging and 45 ms when a filter changes the line. The x-axis is deliberately fixed at ₹1.5 L to ₹6 L so the ground does not move under the marker.
+
 ## Interest and debt
 
-The loan rate defaults to 10% a year, but **debt shares default to 0%, so the rate changes nothing** until `landDebt` or `devDebt` is set. The curve note says so on the page rather than letting the input look live when it is not. For scale: funding 60% of development at 10% moves the break-even land price by about ₹2,000 per cent, roughly ₹27 L across the parcel. Financing is a rounding error next to the plot price.
+The loan rate defaults to 10% a year, but **debt shares default to 0%, so the rate changes nothing** until `landDebt` or `devDebt` is set. The curve note says so on the page rather than letting the input look live when it is not. For scale: funding 60% of development at 10% moves the break-even land price by about ₹1,900 per cent, roughly ₹25 L across the parcel. Financing is a rounding error next to the plot price.
 
 ## Saving
 
@@ -44,21 +53,19 @@ Save writes the assumptions and the ladder rungs to this browser's local storage
 
 ## Validation
 
-Defaults: 1,334 cents, ask ₹1,00,000, floor ₹80,000, plots ₹3,30,000 per layout cent, development ₹8 cr, 54% saleable, zero cost basis, no debt.
+Defaults: 1,334 cents, ask ₹1,00,000, floor ₹80,000, plots ₹3,30,000 per layout cent, development ₹9 cr, 54% saleable, sales from month 12 over 24 months, 10% loan rate, zero cost basis, no debt.
 
-At those defaults: gross ₹13.34 cr, tax ₹1.99433 cr, net to us ₹11.34567 cr. Saleable area 720.36 cents (3,13,789 sq ft), development ₹255 per saleable sq ft. Buyer profit ₹83.83 L, a 3.7% margin and 1.7% a year. Break-even plot price ₹3,18,003. Lever 2.04×.
+At those defaults: gross ₹13.34 cr, tax ₹1.99433 cr, net to us ₹11.34567 cr. Saleable area 720.36 cents (3,13,789 sq ft), development ₹287 per saleable sq ft. Break-even land price ₹98,863 per cent, so our ₹1,00,000 ask sits just above the line and the buyer is marginally under water. Our ask needs plots at ₹3,32,314; our ₹80,000 floor needs ₹2,91,612.
 
-At an ask of ₹80,000: buyer profit ₹3.68 cr, an 18.3% margin, break-even ₹2,77,301.
-
-Break-even land price along the curve, at 54% saleable, ₹8 cr development and no debt:
+Break-even land price along the curve, at 54% saleable, ₹9 cr development, a 24-month sell-out and no debt:
 
 | Plot price per layout cent | They can pay | Gross to us | Net after tax |
 | --- | --- | --- | --- |
-| ₹2.50 L | ₹66,585 | ₹8.88 cr | ₹7.55 cr |
-| ₹3.00 L | ₹91,154 | ₹12.16 cr | ₹10.34 cr |
-| ₹3.30 L | ₹1,05,895 | ₹14.13 cr | ₹12.01 cr |
-| ₹3.50 L | ₹1,15,722 | ₹15.44 cr | ₹13.13 cr |
-| ₹4.00 L | ₹1,40,291 | ₹18.71 cr | ₹15.92 cr |
+| ₹2.50 L | ₹59,553 | ₹7.94 cr | ₹6.76 cr |
+| ₹3.00 L | ₹84,122 | ₹11.22 cr | ₹9.54 cr |
+| ₹3.30 L | ₹98,863 | ₹13.19 cr | ₹11.22 cr |
+| ₹3.50 L | ₹1,08,690 | ₹14.50 cr | ₹12.33 cr |
+| ₹4.00 L | ₹1,33,259 | ₹17.78 cr | ₹15.12 cr |
 
 The line is almost straight because with no debt the model is linear: break-even land price is `(saleable x plot price x 0.97 - development) / (area x 1.066)`. It bends only once financing is switched on.
 
@@ -66,7 +73,7 @@ The cost basis is fixed at zero and has no input control, so the tax is always 1
 
 ## Known inconsistency in the brief's defaults
 
-The default ₹8 cr budget is ₹255 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.98 cr, about ₹3 cr more cost, which lands directly on what the buyer can pay us. The hero tile prints the implied rate against its own denominator so it is visible at a glance. Settle this number before trusting any verdict on the ladder.
+The default ₹9 cr budget is ₹287 per saleable sq ft, against the ₹350 the brief states as expected. At ₹350 the budget would be ₹10.98 cr, about ₹2 cr more cost, which lands directly on what the buyer can pay us. The hero tile prints the implied rate against its own denominator so it is visible at a glance. Settle this number before trusting any verdict on the ladder.
 
 ## Keeping the model in sync
 

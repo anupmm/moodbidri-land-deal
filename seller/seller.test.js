@@ -40,10 +40,10 @@ close(60000000/(half.saleable*435.6),206.51,.01);
 close(60000000/(full.saleable*435.6),103.25,.01);
 close(calculate({...D,dev:60000000,share:54}).saleable*435.6,313788.8,.1);
 // The curve is the ladder's solver read the other way round, so the two must agree.
-const PAGE={...D,landPrice:100000,plotPrice:330000,dev:80000000,share:54,interest:10};
+const PAGE={...D,landPrice:100000,plotPrice:330000,dev:90000000,share:54,interest:10,salesStart:12,salesMonths:24};
 close(calculate({...PAGE,landPrice:breakEvenLand(PAGE)}).profit,0,.1);
 close(breakEvenLand({...PAGE,plotPrice:breakEvenPlot(PAGE)}),PAGE.landPrice,1);
-close(breakEvenLand(PAGE),105895,1);
+close(breakEvenLand(PAGE),98862,1);
 // Rising plot prices must raise what they can pay, monotonically.
 let last=-1;
 for(const x of[200000,250000,300000,350000,400000,450000,500000]){
@@ -55,6 +55,35 @@ close(breakEvenLand(PAGE),breakEvenLand({...PAGE,interest:18}),1e-6);
 assert.ok(breakEvenLand({...PAGE,devDebt:60,interest:18})<breakEvenLand({...PAGE,devDebt:60,interest:8}),'with debt, dearer money must lower what they can pay');
 
 console.log('Seller model checks passed. Lever = '+lever.toFixed(2)+'x, break-even at a 1L ask = '+Math.round(need));
+
+// The fast secant solvers drive the chart; they must agree with the reference bisection
+// everywhere on the plotted range, including with debt switched on.
+{
+ const ctx={};vm.createContext(ctx);
+ vm.runInContext(html.match(MODEL)[1],ctx);
+ ctx.document={getElementById(){return{addEventListener(){},setAttribute(){},innerHTML:'',textContent:'',value:'',type:'text',dataset:{},closest(){return null}}},addEventListener(){}};
+ ctx.localStorage={setItem(){},getItem(){return null},removeItem(){}};ctx.Intl=Intl;
+ ctx.setTimeout=f=>{f();return 0};ctx.clearTimeout=()=>{};ctx.requestAnimationFrame=f=>f();
+ vm.runInContext([...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)][1][1],ctx);
+ vm.runInContext('this.solvers={fastLand,fastPlot,breakEvenLand,breakEvenPlot,CURVE_LO,CURVE_HI}',ctx);
+ const{fastLand,fastPlot,breakEvenLand,breakEvenPlot,CURVE_LO,CURVE_HI}=ctx.solvers;
+ let worstLand=0,worstPlot=0;
+ for(const debt of[{},{devDebt:60},{landDebt:40,devDebt:70,interest:16}]){
+  for(let i=0;i<=12;i++){
+   const x=CURVE_LO+(CURVE_HI-CURVE_LO)*i/12,q={...PAGE,...debt,plotPrice:x};
+   const ref=breakEvenLand(q),fast=fastLand(q);
+   assert.equal(ref==null,fast==null,`fastLand disagreed on feasibility at ${x}`);
+   if(ref!=null)worstLand=Math.max(worstLand,Math.abs(ref-fast));
+  }
+  for(const ask of[60000,80000,100000,130000,180000]){
+   const q={...PAGE,...debt,landPrice:ask};
+   worstPlot=Math.max(worstPlot,Math.abs(breakEvenPlot(q)-fastPlot(q)));
+  }
+ }
+ assert.ok(worstLand<1,`fastLand drifted from bisect by ${worstLand}`);
+ assert.ok(worstPlot<1,`fastPlot drifted from bisect by ${worstPlot}`);
+ console.log('Fast solvers agree with bisect: land within '+worstLand.toFixed(4)+', plot within '+worstPlot.toFixed(4)+' rupees.');
+}
 
 // Smoke-render the UI against a DOM stub so template and id typos fail here, not in the browser.
 const nodes=new Map(),store=new Map();
@@ -71,21 +100,25 @@ assert.ok(!panelOpenCheck(nodes.get('inputs').innerHTML),'every assumption group
 assert.match(nodes.get('h-net').textContent,/11\.35 cr/);
 assert.match(nodes.get('h-net-sub').textContent,/1.99 cr tax, 14.9% of the sale/);
 // The development rate must divide by saleable area only, never the whole parcel.
-assert.match(nodes.get('h-dev-sub').textContent,/₹255 per sq ft across the 720 saleable cents/);
-assert.match(nodes.get('h-profit-sub').textContent,/on the .* they spend, earned over 4\.0 years/);
+assert.match(nodes.get('h-dev-sub').textContent,/₹287 per sq ft across the 720 saleable cents/);
+assert.match(nodes.get('h-profit-sub').textContent,/on the .* they spend, earned over 3.0 years/);
 assert.match(nodes.get('h-foot').textContent,/break even at .* per layout cent/);
 assert.match(nodes.get('ladder').innerHTML,/data-price="150000"/);
 assert.match(nodes.get('ladder').innerHTML,/floor<\/span>/);
 assert.match(nodes.get('lever').innerHTML,/The lever/);
 const curve=nodes.get('curve').innerHTML;
 assert.match(curve,/<polyline[^>]*stroke="#16704e"/,'the break-even line should be drawn');
-assert.equal((curve.match(/<polygon/g)||[]).length,2,'profit and loss regions should both be shaded');
+assert.equal((curve.match(/<polygon/g)||[]).length,1,'the profit region should be shaded under the line');
+assert.match(curve,/<rect [^>]*fill="#fbeaea"/,'the loss region should be shaded behind it');
+assert.match(curve,/id="curve-handle"[^>]*role="slider"/,'the marker should be an accessible slider');
+assert.match(curve,/our ask /,'the ask should be tagged on the chart');
+assert.match(curve,/our floor /,'the floor should be tagged on the chart');
 assert.match(nodes.get('curve-note').textContent,/they break even at .*per cent/);
-assert.match(nodes.get('curve-note').textContent,/Debt is set to 0%/,'the note must say the interest rate is inert at zero debt');
+assert.match(nodes.get('curve-note').textContent,/Debt is 0%, so the 10% rate/,'the note must say the interest rate is inert at zero debt');
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
 // Rupee and area boxes carry Indian separators; everything else stays a plain number box.
 const panel=nodes.get('inputs').innerHTML;
-for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['dev','8,00,00,000'],['area','1,334']])
+for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['dev','9,00,00,000'],['area','1,334']])
   assert.ok(panel.includes(`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${v}"`),`${k} should be a grouped text box showing ${v}`);
 for(const k of['tax','share','salesMonths','interest'])
   assert.ok(panel.includes(`<input id="${k}" type="number"`),`${k} should stay a plain number box`);
