@@ -87,10 +87,11 @@ console.log('Seller model checks passed. Lever = '+lever.toFixed(2)+'x, break-ev
 
 // Smoke-render the UI against a DOM stub so template and id typos fail here, not in the browser.
 const nodes=new Map(),store=new Map();
-const node=()=>({addEventListener(){},innerHTML:'',textContent:'',value:'',dataset:{},closest(){return null}});
+const node=()=>({addEventListener(){},setAttribute(k,v){this[k]=v},getBoundingClientRect(){return{left:0,width:900,height:430}},setPointerCapture(){},querySelector(){return{focus(){}}},classList:{add(){},remove(){}},innerHTML:'',textContent:'',value:'',type:'text',dataset:{},closest(){return null}});
 context.document={getElementById(id){if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},addEventListener(){}};
 context.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.has(k)?store.get(k):null,removeItem:k=>store.delete(k)};
 context.setTimeout=setTimeout;context.clearTimeout=clearTimeout;context.Intl=Intl;
+context.requestAnimationFrame=f=>f();context.addEventListener=()=>{};
 vm.runInContext([...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)][1][1],context);
 for(const id of['h-ask','h-gross','h-net','h-dev','h-profit','h-foot','curve','curve-note','ladder','lever','matrix','seller-detail','tds','waterfall','flows','heat2','chart','buyer','returns'])
   assert.ok(nodes.get(id)&&(nodes.get(id).innerHTML||nodes.get(id).textContent),`#${id} rendered empty`);
@@ -128,6 +129,17 @@ for(const k of['dev','share','interest'])
 assert.equal(nodes.get('f-dev').value,'9,00,00,000','the chart filter should show the 9 cr default');
 assert.equal(nodes.get('f-share').value,'54');
 assert.equal(nodes.get('f-interest').value,'10');
+// Each chart control spells out the number behind it, and the hints are live, not build-time.
+assert.match(nodes.get('f-dev-hint').textContent,/₹287 per sq ft of layout land/);
+assert.match(nodes.get('f-share-hint').textContent,/720 saleable cents of 1,334 · 3,13,789 sq ft/);
+assert.match(nodes.get('f-interest-hint').textContent,/No effect yet: debt is 0%/);
+vm.runInContext('state.dev=120000000;state.share=45;state.devDebt=60;render()',context);
+assert.match(nodes.get('f-dev-hint').textContent,/₹459 per sq ft/,'the development hint must follow the input');
+assert.match(nodes.get('f-share-hint').textContent,/600 saleable cents/,'the saleable hint must follow the input');
+assert.match(nodes.get('f-interest-hint').textContent,/60% of development/,'the interest hint must notice debt');
+vm.runInContext('state.dev=90000000;state.share=54;state.devDebt=0;render()',context);
+// The chart matches its viewBox to the measured pixel box, or phone labels shrink to ~5px.
+assert.equal(nodes.get('curve').viewBox,'0 0 900 430','the viewBox must track the measured size');
 // A snapshot saved under different defaults must not silently mask the shipped ones.
 nodes.get('save').onclick();assert.ok(store.get('moodbidri-seller-v1'),'save wrote nothing');
 const snap=JSON.parse(store.get('moodbidri-seller-v1'));

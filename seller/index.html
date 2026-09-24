@@ -63,10 +63,12 @@ th{font-weight:600;color:var(--muted)}
 .legend{display:flex;gap:15px;font-size:13px;margin:12px 0}
 .legend i{width:12px;height:12px;display:inline-block;margin-right:5px}
 .chart{width:100%;height:260px}
-.curve{width:100%;height:430px;overflow:visible;user-select:none}
+.curve{width:100%;height:430px;display:block;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.curve.dragging{touch-action:none}
 #curve-handle{cursor:ew-resize;touch-action:none}
+.hint{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:7px}
 #curve-handle:focus-visible{outline:none}
-.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 22px;margin:18px 0 6px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 26px;margin:20px 0 0;padding:16px 0 4px;border-top:1px solid var(--line)}
 .filters .field{border-top:0;padding:8px 0}
 .note{font-size:14px;color:var(--muted)}
 .heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
@@ -93,7 +95,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
  .ladder tr.here th:first-child,.ladder tr.here td:first-child{background:#eaf2fe}
  .heat th:first-child{background:white}
  .chart{height:220px}
- .curve{height:320px}
+ .curve{height:380px}
  footer{padding:0 16px 24px}
 }
 </style></head><body>
@@ -102,13 +104,13 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <section class="section curve-panel">
   <h2>What they can pay, at every plot price</h2>
   <p class="note">The green line is the most they can pay us per cent and still come out at zero. Below it they make money; above it they lose it. <strong>Drag the dot</strong> along the line to try a different plot price.</p>
-  <div class="filters">
-    <div class="field"><label for="f-dev">Development budget <span class="unit">&#8377; total</span></label><div class="inputline"><input id="f-dev" type="text" inputmode="numeric" autocomplete="off"></div><input type="range" id="f-dev-range"></div>
-    <div class="field"><label for="f-share">Saleable layout land <span class="unit">% of parcel</span></label><div class="inputline"><input id="f-share" type="number"></div><input type="range" id="f-share-range"></div>
-    <div class="field"><label for="f-interest">Interest on their loan <span class="unit">% / year</span></label><div class="inputline"><input id="f-interest" type="number"></div><input type="range" id="f-interest-range"></div>
   </div>
   <svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 430"></svg>
   <p class="note" id="curve-note"></p>
+  <div class="filters">
+    <div class="field"><label for="f-dev">Development budget <span class="unit">&#8377; total</span></label><div class="inputline"><input id="f-dev" type="text" inputmode="numeric" autocomplete="off"></div><input type="range" id="f-dev-range"><small class="hint" id="f-dev-hint"></small></div>
+    <div class="field"><label for="f-share">Saleable layout land <span class="unit">% of parcel</span></label><div class="inputline"><input id="f-share" type="number"></div><input type="range" id="f-share-range"><small class="hint" id="f-share-hint"></small></div>
+    <div class="field"><label for="f-interest">Interest on their loan <span class="unit">% / year</span></label><div class="inputline"><input id="f-interest" type="number"></div><input type="range" id="f-interest-range"><small class="hint" id="f-interest-hint"></small></div>
 </section>
 
 <section class="hero">
@@ -342,7 +344,20 @@ function buildInputs(){
  }
  $('rungs').value=rungs.join(', ');
  syncControls();
+ hints();
 }
+
+// The numbers behind the three chart controls, spelled out under each one.
+function hints(){
+ const p=state,saleable=p.area*p.share/100,sqft=saleable*435.6;
+ const dev=p.dev*(1+p.contingency/100);
+ set('f-dev-hint',sqft?`${exact(dev/sqft)} per sq ft of layout land · the brief expects about ${exact(350)}${p.contingency?` · includes ${p.contingency}% contingency`:''}`:'');
+ set('f-share-hint',`${fmt.format(Math.round(saleable))} saleable cents of ${fmt.format(p.area)} · ${fmt.format(Math.round(sqft))} sq ft · about ${Math.floor(saleable/p.plotSize)} plots of ${p.plotSize} cents`);
+ set('f-interest-hint',p.landDebt===0&&p.devDebt===0?
+  'No effect yet: debt is 0%. Set a debt share under Their timing and debt.':
+  `On ${p.landDebt}% of land and ${p.devDebt}% of development.`);
+}
+function set(id,text){const el=document.getElementById(id);if(el)el.textContent=text}
 
 const FILTERS=FILTER_FIELDS.map(f=>f[0]);
 // Skip whichever box the cursor is in, so a live sync never fights what is being typed.
@@ -466,65 +481,82 @@ function render(){
  $('flows').innerHTML=r.rows.map(x=>`<tr title="Month ${x.m}: cumulative equity ${exact(x.cum)}"><td>${x.m}</td>${['acquisition','development','sales','fee','draw','int','repayment','debt','u','e','cum'].map(k=>`<td>${(x[k]/1e5).toFixed(2)}</td>`).join('')}</tr>`).join('');
  heat2();
  syncControls();
+ hints();
  $('debt-note').textContent=p.landDebt===0&&p.devDebt===0?'Debt funding is 0%, so the interest rate changes nothing here. Raise the debt shares under Their detail to make this table bite.':'Includes drawdowns, monthly interest and repayments from sales.';
 }
 
-const CURVE={W:900,H:430,ML:104,MR:30,MT:38,MB:74};
+// The chart is measured, not fixed. A 900-unit viewBox squeezed into a 360px phone shrinks
+// every label to about 5px; matching the viewBox to the real pixel box keeps 13px meaning 13px.
 let curveGeom=null;
+function curveBox(){
+ const el=$('curve'),r=el.getBoundingClientRect?el.getBoundingClientRect():null;
+ const W=Math.max(300,Math.round(r&&r.width?r.width:900));
+ const H=Math.max(240,Math.round(r&&r.height?r.height:430));
+ const narrow=W<560;
+ return{W,H,narrow,fs:narrow?12:13,
+  ML:narrow?52:104,MR:narrow?14:30,MT:narrow?34:38,MB:narrow?54:74,
+  xt:narrow?3:6,yt:narrow?4:5};
+}
 
 function drawCurve(p,even){
- const{W,H,ML,MR,MT,MB}=CURVE;
+ const g=curveBox(),{W,H,ML,MR,MT,MB,narrow,fs,xt,yt}=g;
+ if($('curve').setAttribute)$('curve').setAttribute('viewBox',`0 0 ${W} ${H}`);
  const lo=CURVE_LO,hi=CURVE_HI,pts=curvePoints(p);
  const ymax=Math.max(25000,Math.ceil(Math.max(...pts.map(q=>q.y),p.landPrice,p.floor)*1.12/25000)*25000);
- curveGeom={lo,hi,ymax};
  const X=v=>ML+(v-lo)/(hi-lo)*(W-ML-MR),Y=v=>H-MB-v/ymax*(H-MB-MT);
- const path=pts.map(q=>X(q.x)+','+Y(q.y)).join(' ');
+ curveGeom={lo,hi,ymax,W,ML,MR};
+ const path=pts.map(q=>X(q.x).toFixed(1)+','+Y(q.y).toFixed(1)).join(' ');
+ const money0=v=>narrow?(v?Math.round(v/1000)+'k':'0'):fmt.format(Math.round(v));
  let svg=`<rect x="${ML}" y="${MT}" width="${W-ML-MR}" height="${H-MB-MT}" fill="#fbeaea"/>`;
  svg+=`<polygon points="${X(lo)},${Y(0)} ${path} ${X(hi)},${Y(0)}" fill="#e3f3ea"/>`;
- for(let i=0;i<=5;i++){const v=ymax*i/5;
-  svg+=`<line x1="${ML}" x2="${W-MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff" stroke-width="1" opacity=".7"/>`+
-   `<text x="${ML-14}" y="${Y(v)+4}" text-anchor="end" fill="#596e76" font-size="13">${fmt.format(Math.round(v))}</text>`;}
- for(let i=0;i<=6;i++){const v=lo+(hi-lo)*i/6;
-  svg+=`<line x1="${X(v)}" x2="${X(v)}" y1="${MT}" y2="${H-MB}" stroke="#ffffff" stroke-width="1" opacity=".7"/>`+
-   `<text x="${X(v)}" y="${H-MB+20}" text-anchor="middle" fill="#596e76" font-size="13">${(v/1e5).toFixed(2)} L</text>`;}
- svg+=`<text x="${X(lo)+8}" y="${MT+20}" fill="#9a4040" font-size="13" font-weight="700">they lose money up here</text>`;
- svg+=`<text x="${X(hi)-8}" y="${H-MB-12}" text-anchor="end" fill="#1d6b4c" font-size="13" font-weight="700">they make money down here</text>`;
- // Our two reference prices sit as labelled tags on opposite edges, so they never collide.
+ for(let i=0;i<=yt;i++){const v=ymax*i/yt;
+  svg+=`<line x1="${ML}" x2="${W-MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff" opacity=".7"/>`+
+   `<text x="${ML-8}" y="${Y(v)+4}" text-anchor="end" fill="#596e76" font-size="${fs}">${money0(v)}</text>`;}
+ for(let i=0;i<=xt;i++){const v=lo+(hi-lo)*i/xt;
+  svg+=`<line x1="${X(v)}" x2="${X(v)}" y1="${MT}" y2="${H-MB}" stroke="#ffffff" opacity=".7"/>`+
+   `<text x="${X(v)}" y="${H-MB+19}" text-anchor="middle" fill="#596e76" font-size="${fs}">${(v/1e5).toFixed(2)} L</text>`;}
+ svg+=`<text x="${X(lo)+7}" y="${MT+17}" fill="#9a4040" font-size="${fs}" font-weight="700">${narrow?'they lose money':'they lose money up here'}</text>`;
+ svg+=`<text x="${X(hi)-7}" y="${H-MB-10}" text-anchor="end" fill="#1d6b4c" font-size="${fs}" font-weight="700">${narrow?'they profit':'they make money down here'}</text>`;
+ // Our two prices are tags on opposite edges, so they cannot overlap each other or the line.
  const tag=(y,color,text,right)=>{
   if(y==null||y>ymax||y<0)return'';
-  const w=text.length*6.9+18,x=right?W-MR-8-w:ML+8;
+  const w=text.length*(fs*.55)+16,x=right?W-MR-6-w:ML+6;
   return `<line x1="${ML}" x2="${W-MR}" y1="${Y(y)}" y2="${Y(y)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2 5" opacity=".6"/>`+
    `<rect x="${x}" y="${Y(y)-11}" width="${w}" height="22" rx="11" fill="${color}"/>`+
-   `<text x="${x+w/2}" y="${Y(y)+4}" text-anchor="middle" fill="white" font-size="12" font-weight="700">${text}</text>`;
+   `<text x="${x+w/2}" y="${Y(y)+4}" text-anchor="middle" fill="white" font-size="${fs-1}" font-weight="700">${text}</text>`;
  };
- svg+=tag(p.landPrice,'#1464d2','our ask '+exact(p.landPrice),false);
- svg+=tag(p.floor,'#172e38','our floor '+exact(p.floor),true);
- svg+=`<polyline fill="none" stroke="#16704e" stroke-width="3.5" points="${path}"/>`;
- // The draggable read-off: crosshair to both axes with the values boxed in the gutters.
+ svg+=tag(p.landPrice,'#1464d2',(narrow?'ask ':'our ask ')+exact(p.landPrice),false);
+ svg+=tag(p.floor,'#172e38',(narrow?'floor ':'our floor ')+exact(p.floor),true);
+ svg+=`<polyline fill="none" stroke="#16704e" stroke-width="${narrow?3:3.5}" points="${path}"/>`;
  const px=Math.min(hi,Math.max(lo,p.plotPrice)),atPx=fastLand({...p,plotPrice:px});
  const py=Math.min(ymax,Math.max(0,atPx==null?0:atPx));
  const cx=X(px),cy=Y(py);
  svg+=`<line x1="${cx}" x2="${cx}" y1="${cy}" y2="${H-MB}" stroke="#16704e" stroke-width="1.5" stroke-dasharray="3 3"/>`+
   `<line x1="${ML}" x2="${cx}" y1="${cy}" y2="${cy}" stroke="#16704e" stroke-width="1.5" stroke-dasharray="3 3"/>`;
- const chip=(x,y,text,anchor)=>{const w=text.length*7.1+16;
-  const rx=anchor==='end'?x-w:anchor==='middle'?x-w/2:x;
+ const chip=(x,y,text,mid)=>{const w=text.length*(fs*.58)+14,rx=Math.max(2,Math.min(W-w-2,mid?x-w/2:x-w));
   return `<rect x="${rx}" y="${y-11}" width="${w}" height="22" rx="5" fill="#16704e"/>`+
-   `<text x="${rx+w/2}" y="${y+4}" text-anchor="middle" fill="white" font-size="12" font-weight="700">${text}</text>`;};
- svg+=chip(ML-14,cy,exact(py),'end');
- svg+=chip(cx,H-MB+20,lakh(px),'middle');
+   `<text x="${rx+w/2}" y="${y+4}" text-anchor="middle" fill="white" font-size="${fs-1}" font-weight="700">${text}</text>`;};
+ // Narrow gutters cannot hold the full figure, so the read-off sits just inside the plot instead.
+ svg+=narrow?chip(ML+6+(exact(py).length*(fs*.58)+14),cy,exact(py),false):chip(ML-8,cy,exact(py),false);
+ svg+=chip(cx,H-MB+19,lakh(px),true);
  svg+=`<g id="curve-handle" tabindex="0" role="slider" aria-label="Plot price they achieve, rupees per layout cent" aria-valuemin="${Math.round(lo)}" aria-valuemax="${Math.round(hi)}" aria-valuenow="${Math.round(px)}" aria-valuetext="${lakh(px)} per layout cent">`+
-  `<circle cx="${cx}" cy="${cy}" r="20" fill="transparent"/>`+
-  `<circle cx="${cx}" cy="${cy}" r="9" fill="#16704e" stroke="white" stroke-width="3"/>`+
+  `<circle cx="${cx}" cy="${cy}" r="${narrow?30:20}" fill="transparent"/>`+
+  `<circle cx="${cx}" cy="${cy}" r="${narrow?11:9}" fill="#16704e" stroke="white" stroke-width="3"/>`+
   `</g>`;
- svg+=`<text x="${ML}" y="${H-14}" fill="#596e76" font-size="13">Plot price they achieve, \u20b9 per layout cent \u2192</text>`;
- svg+=`<text transform="translate(24,${MT+6}) rotate(-90)" fill="#596e76" font-size="13" text-anchor="end">\u20b9 per cent they can pay us \u2192</text>`;
+ if(narrow){
+  svg+=`<text x="${ML-8}" y="${MT-12}" text-anchor="end" fill="#596e76" font-size="${fs}">\u20b9/cent</text>`;
+  svg+=`<text x="${W-MR}" y="${H-8}" text-anchor="end" fill="#596e76" font-size="${fs}">plot price, \u20b9 per layout cent</text>`;
+ }else{
+  svg+=`<text x="${ML}" y="${H-14}" fill="#596e76" font-size="${fs}">Plot price they achieve, \u20b9 per layout cent \u2192</text>`;
+  svg+=`<text transform="translate(24,${MT+6}) rotate(-90)" fill="#596e76" font-size="${fs}" text-anchor="end">\u20b9 per cent they can pay us \u2192</text>`;
+ }
  $('curve').innerHTML=svg;
  const at=fastLand(p);
  $('curve-note').textContent=
   (at==null?`At ${lakh(p.plotPrice)} per layout cent they lose money even if we give the land away. `:
    `At ${lakh(p.plotPrice)} per layout cent they break even at ${exact(at)} per cent, which is ${money(at*p.area)} gross to us. `)+
   (even==null?'':`Read the other way: our ${exact(p.landPrice)} ask needs plots at ${lakh(even)}. `)+
-  (p.landDebt===0&&p.devDebt===0?`Debt is 0%, so the ${p.interest}% rate is not touching this line yet \u2014 set the debt shares under Their detail.`:
+  (p.landDebt===0&&p.devDebt===0?`Debt is 0%, so the ${p.interest}% rate is not touching this line yet \u2014 set the debt shares under Their timing and debt.`:
    `${p.landDebt}% of land and ${p.devDebt}% of development are borrowed at ${p.interest}% a year.`);
 }
 
@@ -563,22 +595,41 @@ function plotFromPointer(e){
  if(!curveGeom||!$('curve').getBoundingClientRect)return;
  const r=$('curve').getBoundingClientRect();
  if(!r.width)return;
- const{W,ML,MR}=CURVE,{lo,hi}=curveGeom;
+ const{lo,hi,W,ML,MR}=curveGeom;
  const frac=((e.clientX-r.left)/r.width*W-ML)/(W-ML-MR);
  const v=Math.round((lo+Math.min(1,Math.max(0,frac))*(hi-lo))/2500)*2500;
  if(v===state.plotPrice)return;
  state.plotPrice=Math.min(1000000,Math.max(0,v));paint();
 }
+function endDrag(){
+ if(!dragging)return;
+ dragging=false;
+ if($('curve').classList)$('curve').classList.remove('dragging');
+}
+let tapFrom=null;
 $('curve').addEventListener('pointerdown',e=>{
  const onHandle=!!(e.target.closest&&e.target.closest('#curve-handle'));
- // Touch must grab the dot, or the page could not be scrolled past the chart.
- if(!onHandle&&e.pointerType!=='mouse')return;
- dragging=true;
+ // A touch drag must start on the dot, or the page could not be scrolled past the chart.
+ // A touch that does not move is treated as a tap on pointerup instead.
+ if(!onHandle&&e.pointerType!=='mouse'){tapFrom={x:e.clientX,y:e.clientY,e};return}
+ dragging=true;tapFrom=null;
+ if($('curve').classList)$('curve').classList.add('dragging');
  try{$('curve').setPointerCapture(e.pointerId)}catch{}
  plotFromPointer(e);
 });
-$('curve').addEventListener('pointermove',e=>{if(dragging){e.preventDefault();plotFromPointer(e)}});
-for(const t of['pointerup','pointercancel','pointerleave'])$('curve').addEventListener(t,()=>{dragging=false});
+$('curve').addEventListener('pointermove',e=>{
+ if(dragging){e.preventDefault();plotFromPointer(e);return}
+ if(tapFrom&&(Math.abs(e.clientX-tapFrom.x)>10||Math.abs(e.clientY-tapFrom.y)>10))tapFrom=null;
+});
+$('curve').addEventListener('pointerup',e=>{
+ if(!dragging&&tapFrom)plotFromPointer(e);
+ tapFrom=null;endDrag();
+});
+for(const t of['pointercancel','pointerleave'])$('curve').addEventListener(t,()=>{tapFrom=null;endDrag()});
+// iOS does not reliably honour touch-action on SVG children, so block the scroll outright
+// while a drag is live. Non-passive, or preventDefault would be ignored.
+try{$('curve').addEventListener('touchmove',e=>{if(dragging&&e.cancelable)e.preventDefault()},{passive:false})}
+catch{$('curve').addEventListener('touchmove',e=>{if(dragging&&e.cancelable)e.preventDefault()})}
 $('curve').addEventListener('keydown',e=>{
  if(!(e.target.closest&&e.target.closest('#curve-handle')))return;
  const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;
@@ -590,6 +641,11 @@ $('curve').addEventListener('keydown',e=>{
  if(h&&h.focus)h.focus();
 });
 for(const k of FILTERS)bindFilter(k);
+if(typeof addEventListener!=='undefined'){
+ let rz;const remeasure=()=>{clearTimeout(rz);rz=setTimeout(()=>drawCurve(state,evenPlot(state)),120)};
+ addEventListener('resize',remeasure);
+ addEventListener('orientationchange',remeasure);
+}
 $('rungs').addEventListener('input',e=>{rungs=readRungs(e.target.value);clearTimeout(timer);timer=setTimeout(render,120)});
 const KEY='moodbidri-seller-v1';
 // Stamped on every save. When the shipped defaults change this no longer matches, and a
