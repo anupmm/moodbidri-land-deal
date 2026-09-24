@@ -127,7 +127,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <div class="actions"><button id="reset">Reset</button><button id="save">Save</button><button id="load">Load</button></div>
 <div id="status" role="status"></div>
 <div id="inputs"></div>
-<p class="note">Saved in this browser only. Nominal rupees; no indexation, GST or professional fees.</p>
+<p class="note">Development budget, saleable layout land and their loan interest are set above the chart, not here. Saved in this browser only; nominal rupees, no indexation, GST or professional fees.</p>
 </aside>
 <main>
 
@@ -197,30 +197,33 @@ const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
 const fields=[
 ['Our side',[
  ['area','Parcel area','cents',1,5000,1,'1,334 cents is 13.34 acres.'],
- ['landPrice','Our ask','₹ / cent',0,300000,5000,'The price being tested. Drives every number on this page.'],
- ['floor','Our floor','₹ / cent',0,300000,5000,'The price we will not go below. Marked on the bar and in the ladder.'],
- ['tax','Effective LTCG rate','%',0,40,.05,'Applied only to the gain above basis.']
+ ['landPrice','Our ask','\u20b9 / cent',0,300000,5000,'The price being tested. Drives every number on this page.'],
+ ['floor','Our floor','\u20b9 / cent',0,300000,5000,'The price we will not go below. Marked on the chart and in the ladder.'],
+ ['tax','Effective LTCG rate','%',0,40,.05,'Applied to the gain, taken at a zero cost basis.']
 ]],
-['What we assume about them',[
- ['plotPrice','Plot price they achieve','₹ / layout cent',0,1000000,5000,'Price per saleable cent in the finished layout. The one number that decides whether our ask is payable.'],
- ['dev','Development budget','₹ total',0,150000000,100000,'Conversion, approvals and civil works before contingency. The brief expects about ₹350 per saleable sq ft.']
-]],
-['Their detail',[
+['Their layout and costs',[
+ ['plotPrice','Plot price they achieve','\u20b9 / layout cent',0,1000000,5000,'Price per saleable cent in the finished layout. Also set by dragging the dot on the chart.'],
  ['stamp','Stamp duty + registration','%',0,15,.1,'Buyer acquisition charges as a percentage of land value.'],
- ['share','Saleable land','%',1,100,1,'Share left after roads, parks and civic amenities.'],
  ['plotSize','Typical plot size','cents',.1,20,.1,'Used for the indicative plot count only.'],
- ['contingency','Development contingency','%',0,50,1,'Added to the development budget.'],
+ ['contingency','Development contingency','%',0,50,1,'Added to the development budget set above the chart.'],
  ['broker','Brokerage + marketing','% of sales',0,20,.1,'Deducted from each month of gross sale receipts.'],
- ['growth','Plot price growth','% / year',-20,30,.5,'Annual compounding from the first sale month.'],
+ ['growth','Plot price growth','% / year',-20,30,.5,'Annual compounding from the first sale month.']
+]],
+['Their timing and debt',[
  ['approval','Conversion + approval','months',0,60,1,'Planning check; does not shift development or sales by itself.'],
  ['devStart','Development starts','month',0,60,1,'First month of evenly spread development spending.'],
  ['devMonths','Development duration','months',1,60,1,'Number of months with development spending.'],
  ['salesStart','Plot sales start','month',0,120,1,'First month with sale receipts.'],
  ['salesMonths','Sell-out duration','months',1,120,1,'Saleable land sells in equal monthly amounts.'],
  ['landDebt','Debt-funded land','%',0,100,5,'Debt share of land price; excludes stamp duty.'],
- ['devDebt','Debt-funded development','%',0,100,5,'Debt share of development including contingency.'],
- ['interest','Loan interest','% / year',0,30,.5,'Monthly interest on opening debt, capitalized before repayments.']
+ ['devDebt','Debt-funded development','%',0,100,5,'Debt share of development including contingency.']
 ]]];
+// These three have their own controls above the chart and deliberately appear nowhere else.
+const FILTER_FIELDS=[
+ ['dev','Development budget','\u20b9 total',0,150000000,100000,'Conversion, approvals and civil works before contingency.'],
+ ['share','Saleable layout land','% of parcel',1,100,1,'Share left after roads, parks and civic amenity sites.'],
+ ['interest','Interest on their loan','% / year',0,30,.5,'Monthly interest on opening debt. Inert until a debt share is set.']
+];
 
 let state={...SELLER_DEFAULTS},rungs=[...RUNGS_DEFAULT],timer;
 const $=id=>document.getElementById(id),fmt=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
@@ -304,6 +307,7 @@ function band(roi){return roi==null?'#eef1f3':roi>.25?'#d4eddf':roi>.12?'#fff0ce
 // separators, so those fields are text boxes that parse digits and reformat on blur.
 const META=new Map();
 for(const[,fs]of fields)for(const f of fs)META.set(f[0],f);
+for(const f of FILTER_FIELDS)META.set(f[0],f);
 const grouped=k=>{const m=META.get(k);return !!m&&(m[2].includes('\u20b9')||k==='area')};
 const show=k=>grouped(k)?fmt.format(state[k]):String(state[k]);
 
@@ -340,7 +344,7 @@ function buildInputs(){
  syncControls();
 }
 
-const FILTERS=['dev','share','interest'];
+const FILTERS=FILTER_FIELDS.map(f=>f[0]);
 // Skip whichever box the cursor is in, so a live sync never fights what is being typed.
 function focused(){try{return document.activeElement}catch{return null}}
 function syncControls(){
@@ -548,7 +552,7 @@ function readRungs(text){
  const list=[...new Set(seen)].sort((a,b)=>a-b);
  return list.length?list:[...RUNGS_DEFAULT];
 }
-function valid(p){return p&&fields.every(([,fs])=>fs.every(([k,,,min,max])=>typeof p[k]==='number'&&Number.isFinite(p[k])&&p[k]>=min&&p[k]<=max))&&['approval','devStart','devMonths','salesStart','salesMonths'].every(k=>Number.isInteger(p[k]))}
+function valid(p){return !!p&&[...META.values()].every(([k,,,min,max])=>typeof p[k]==='number'&&Number.isFinite(p[k])&&p[k]>=min&&p[k]<=max)&&['approval','devStart','devMonths','salesStart','salesMonths'].every(k=>Number.isInteger(p[k]))}
 
 function pick(price){state.landPrice=price;render()}
 
@@ -588,6 +592,9 @@ $('curve').addEventListener('keydown',e=>{
 for(const k of FILTERS)bindFilter(k);
 $('rungs').addEventListener('input',e=>{rungs=readRungs(e.target.value);clearTimeout(timer);timer=setTimeout(render,120)});
 const KEY='moodbidri-seller-v1';
+// Stamped on every save. When the shipped defaults change this no longer matches, and a
+// stale snapshot must not quietly mask the new ones the way it did before.
+const STAMP=JSON.stringify(SELLER_DEFAULTS);
 // Returns the stored assumptions, or null if there are none and nothing usable.
 function stored(){try{
  const data=JSON.parse(localStorage.getItem(KEY));
@@ -599,8 +606,13 @@ $('reset').onclick=()=>{
  try{localStorage.removeItem(KEY)}catch{}
  $('status').textContent='Back to defaults. Anything saved has been cleared.';
 };
-$('save').onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify({state,rungs}));$('status').textContent='Saved. This is what loads from now on.'}catch{$('status').textContent='This browser could not save.'}};
-$('load').onclick=()=>{const data=stored();if(!data){$('status').textContent='Nothing saved in this browser.';return}apply(data);$('status').textContent='Saved assumptions reloaded.'};
+$('save').onclick=()=>{try{localStorage.setItem(KEY,JSON.stringify({stamp:STAMP,state,rungs}));$('status').textContent='Saved. This is what loads from now on.'}catch{$('status').textContent='This browser could not save.'}};
+$('load').onclick=()=>{
+ const data=stored();
+ if(!data){$('status').textContent='Nothing saved in this browser.';return}
+ apply(data);
+ $('status').textContent=data.stamp===STAMP?'Saved assumptions reloaded.':'Loaded a set saved before the defaults changed. Reset returns to the current defaults.';
+};
 
 document.addEventListener('click',e=>{
  const row=e.target.closest&&e.target.closest('tr[data-price]');
@@ -616,5 +628,6 @@ document.addEventListener('change',e=>{const el=e.target;if(el.id&&META.has(el.i
 
 buildInputs();render();
 const saved=stored();
-if(saved){apply(saved);$('status').textContent='Loaded your saved assumptions. Reset restores the defaults.'}
+if(saved&&saved.stamp===STAMP){apply(saved);$('status').textContent='Loaded your saved assumptions. Reset restores the defaults.'}
+else if(saved)$('status').textContent='Showing the current defaults. You have a saved set from before these changed — press Load to bring it back.';
 </script></body></html>

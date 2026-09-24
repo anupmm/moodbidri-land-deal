@@ -118,12 +118,28 @@ assert.match(nodes.get('curve-note').textContent,/Debt is 0%, so the 10% rate/,'
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
 // Rupee and area boxes carry Indian separators; everything else stays a plain number box.
 const panel=nodes.get('inputs').innerHTML;
-for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['dev','9,00,00,000'],['area','1,334']])
+for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['area','1,334']])
   assert.ok(panel.includes(`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${v}"`),`${k} should be a grouped text box showing ${v}`);
-for(const k of['tax','share','salesMonths','interest'])
+for(const k of['tax','salesMonths','devDebt'])
   assert.ok(panel.includes(`<input id="${k}" type="number"`),`${k} should stay a plain number box`);
+// Exactly one control per assumption: the chart's three must not also appear in the panel.
+for(const k of['dev','share','interest'])
+  assert.ok(!panel.includes(`id="${k}"`),`${k} is duplicated in the left panel; it belongs only above the chart`);
+assert.equal(nodes.get('f-dev').value,'9,00,00,000','the chart filter should show the 9 cr default');
+assert.equal(nodes.get('f-share').value,'54');
+assert.equal(nodes.get('f-interest').value,'10');
+// A snapshot saved under different defaults must not silently mask the shipped ones.
 nodes.get('save').onclick();assert.ok(store.get('moodbidri-seller-v1'),'save wrote nothing');
+const snap=JSON.parse(store.get('moodbidri-seller-v1'));
+assert.ok(snap.stamp,'a save must carry the defaults stamp');
+assert.equal(snap.state.dev,90000000);
+assert.equal(snap.state.salesStart,12);
+assert.equal(snap.state.salesMonths,24);
 nodes.get('load').onclick();assert.match(nodes.get('status').textContent,/reloaded/);
 nodes.get('reset').onclick();assert.match(nodes.get('status').textContent,/cleared/);
 assert.equal(store.get('moodbidri-seller-v1'),undefined,'reset must clear the saved entry');
+store.set('moodbidri-seller-v1',JSON.stringify({...snap,stamp:'older defaults',state:{...snap.state,dev:30000000,salesMonths:36}}));
+nodes.get('load').onclick();
+assert.match(nodes.get('status').textContent,/saved before the defaults changed/,'a stale snapshot must say so when loaded');
+
 console.log('UI render, ladder, hero and storage smoke checks passed.');

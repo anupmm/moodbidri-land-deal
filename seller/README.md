@@ -11,7 +11,7 @@ Everything on the page is driven by the assumptions panel on the left and recomp
 - **Hero** (below the chart) — our ask, gross to us, net after tax, the development cost with its per-sq-ft rate, and the buyer's profit. Underneath, the plot price at which the buyer breaks even.
   - The development rate divides by the **saleable** area only, not the whole parcel. At 50% saleable it is twice the whole-parcel figure. The tile prints its own denominator so this cannot be misread.
   - The buyer's profit carries two percentages. The first is that profit over everything they spend, a plain margin with no timing in it. The second is the compounded annual return on their own cash, which is much lower because the money sits in the ground for about four years.
-- **Break-even curve** (top of the page) — the most the buyer can pay us per cent, plotted against the plot price they achieve. Below the line they make money, above it they lose it. **The dot is draggable**: pull it along the line to set the assumed plot price, or focus it and use the arrow keys (Shift for a bigger step). On a mouse you can also click anywhere in the plot to jump it; on touch you must grab the dot, so the page can still be scrolled. Our ask and our floor sit as labelled tags on opposite edges to keep them apart. Three filters above the chart — development budget, saleable share, loan interest — mirror the left panel, and both stay in sync through `state`.
+- **Break-even curve** (top of the page) — the most the buyer can pay us per cent, plotted against the plot price they achieve. Below the line they make money, above it they lose it. **The dot is draggable**: pull it along the line to set the assumed plot price, or focus it and use the arrow keys (Shift for a bigger step). On a mouse you can also click anywhere in the plot to jump it; on touch you must grab the dot, so the page can still be scrolled. Our ask and our floor sit as labelled tags on opposite edges to keep them apart. Three controls sit above the chart: development budget, saleable layout land and their loan interest. Those three live **only** there and deliberately do not appear in the left panel, so there is exactly one box per assumption. `seller.test.js` asserts no id appears in both places and that every key in `META` has a control somewhere.
 - **Price ladder** — one row per asking price (default ₹80k / ₹1L / ₹1.1L / ₹1.2L / ₹1.5L, editable in the text box). Click a row to make it the ask.
 - **Matrix** — every ask against plot prices from ₹2.5 L to ₹5 L, coloured by the buyer's margin. The outlined column is the plot price currently assumed.
 - **Our money** — the tax working, plus net per cent and per acre.
@@ -47,9 +47,11 @@ That leaves about 24 ms a frame while dragging and 45 ms when a filter changes t
 
 The loan rate defaults to 10% a year, but **debt shares default to 0%, so the rate changes nothing** until `landDebt` or `devDebt` is set. The curve note says so on the page rather than letting the input look live when it is not. For scale: funding 60% of development at 10% moves the break-even land price by about ₹1,900 per cent, roughly ₹25 L across the parcel. Financing is a rounding error next to the plot price.
 
-## Saving
+## Saving, and why it once hid new defaults
 
-Save writes the assumptions and the ladder rungs to this browser's local storage, and the page picks them up automatically the next time it opens. Load re-reads them if you have since changed things. Reset returns to the defaults and clears the saved copy, so the page opens clean afterwards. It is per-browser and per-machine; nothing leaves the computer.
+Save writes the assumptions and the ladder rungs to this browser's local storage, and the page picks them up automatically next time it opens. Reset returns to the defaults and clears the saved copy.
+
+That auto-load had a trap, and it bit once: a snapshot saved under the old defaults kept loading over newly shipped ones, so the page looked like the defaults had never been changed. Every save now carries `STAMP`, a serialisation of `SELLER_DEFAULTS`. If the shipped defaults have moved on, the snapshot is **not** auto-loaded; the status line offers it and the Load button still restores it, saying it predates the change. Change a default and stale snapshots stand down on their own, with no key to bump by hand.
 
 ## Validation
 
