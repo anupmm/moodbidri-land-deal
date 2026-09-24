@@ -143,8 +143,17 @@ assert.match(curve,/<polyline[^>]*stroke="#16704e"/,'the break-even line should 
 assert.equal((curve.match(/<polygon/g)||[]).length,1,'the profit region should be shaded under the line');
 assert.match(curve,/<rect [^>]*fill="#fbeaea"/,'the loss region should be shaded behind it');
 assert.match(curve,/id="curve-handle"[^>]*role="slider"/,'the marker should be an accessible slider');
-assert.match(curve,/our ask /,'the ask should be tagged on the chart');
-assert.match(curve,/our floor /,'the floor should be tagged on the chart');
+// One draggable marker and nothing else: no ask or floor rules competing with it.
+assert.ok(!/our ask|our floor|ask .{0,3}1,00,000|floor .{0,3}80,000/.test(curve),'the chart should carry no ask or floor labels');
+assert.equal((curve.match(/stroke-dasharray/g)||[]).length,2,'only the marker crosshair should be dashed');
+// Axis titles centred on their axes, with icons big enough to read.
+assert.equal((curve.match(/<tspan font-size="21">/g)||[]).length,2,'both axis titles need an enlarged icon');
+assert.match(curve,/<\/tspan> Plot price they achieve, /);
+assert.match(curve,/<\/tspan> .{0,3} per cent they can pay us/);
+const xt=curve.match(/<text x="([\d.]+)" y="[\d.]+" text-anchor="middle"[^>]*><tspan/);
+assert.ok(xt,'the x axis title should be middle-anchored');
+assert.ok(Math.abs(+xt[1]-(104+(900-26))/2)<1,`x title at ${xt[1]} is not centred on the plot`);
+assert.match(curve,/rotate\(-90\)" text-anchor="middle"/,'the y axis title should be middle-anchored too');
 assert.match(nodes.get('curve-note').textContent,/they break even at .*per cent/);
 assert.match(nodes.get('curve-note').textContent,/Debt is 0%, so the 10% rate/,'the note must say the interest rate is inert at zero debt');
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');

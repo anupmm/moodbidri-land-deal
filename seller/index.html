@@ -3,7 +3,9 @@
 <style>
 :root{--ink:#172e38;--muted:#596e76;--line:#dce4e7;--blue:#1464d2;--bg:#f0f4f7;--green:#16704e;--red:#aa3535}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
+html{overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden;max-width:100%}
+.layout,header,footer,aside,main,.section,.hero{max-width:100%}
 header{background:#142e3a;color:white;padding:25px 4vw;display:flex;justify-content:space-between;align-items:center;gap:20px}
 h1{font-size:25px;margin:2px 0}h2{font-size:19px;margin:0 0 16px}p{margin:8px 0}
 small,.muted{color:var(--muted)}header small{color:#b5c9d4}
@@ -498,7 +500,7 @@ function curveBox(){
  const H=Math.max(240,Math.round(r&&r.height?r.height:430));
  const narrow=W<560;
  return{W,H,narrow,fs:narrow?12:13,
-  ML:narrow?58:104,MR:narrow?14:30,MT:narrow?30:38,MB:narrow?58:74,
+  ML:narrow?62:104,MR:narrow?12:26,MT:narrow?30:38,MB:narrow?60:76,
   xt:narrow?3:6,yt:narrow?4:5};
 }
 
@@ -506,7 +508,7 @@ function drawCurve(p,even){
  const g=curveBox(),{W,H,ML,MR,MT,MB,narrow,fs,xt,yt}=g;
  if($('curve').setAttribute)$('curve').setAttribute('viewBox',`0 0 ${W} ${H}`);
  const lo=CURVE_LO,hi=CURVE_HI,pts=curvePoints(p);
- const ymax=Math.max(25000,Math.ceil(Math.max(...pts.map(q=>q.y),p.landPrice,p.floor)*1.12/25000)*25000);
+ const ymax=Math.max(25000,Math.ceil(Math.max(...pts.map(q=>q.y))*1.12/25000)*25000);
  const X=v=>ML+(v-lo)/(hi-lo)*(W-ML-MR),Y=v=>H-MB-v/ymax*(H-MB-MT);
  curveGeom={lo,hi,ymax,W,ML,MR};
  const path=pts.map(q=>X(q.x).toFixed(1)+','+Y(q.y).toFixed(1)).join(' ');
@@ -521,16 +523,6 @@ function drawCurve(p,even){
    `<text x="${X(v)}" y="${H-MB+19}" text-anchor="middle" fill="#596e76" font-size="${fs}">${(v/1e5).toFixed(2)} L</text>`;}
  svg+=`<text x="${X(lo)+7}" y="${MT+17}" fill="#9a4040" font-size="${fs}" font-weight="700">${narrow?'they lose money':'they lose money up here'}</text>`;
  svg+=`<text x="${X(hi)-7}" y="${H-MB-10}" text-anchor="end" fill="#1d6b4c" font-size="${fs}" font-weight="700">${narrow?'they profit':'they make money down here'}</text>`;
- // Our two prices are tags on opposite edges, so they cannot overlap each other or the line.
- const tag=(y,color,text,right)=>{
-  if(y==null||y>ymax||y<0)return'';
-  const w=text.length*(fs*.55)+16,x=right?W-MR-6-w:ML+6;
-  return `<line x1="${ML}" x2="${W-MR}" y1="${Y(y)}" y2="${Y(y)}" stroke="${color}" stroke-width="1.5" stroke-dasharray="2 5" opacity=".6"/>`+
-   `<rect x="${x}" y="${Y(y)-11}" width="${w}" height="22" rx="11" fill="${color}"/>`+
-   `<text x="${x+w/2}" y="${Y(y)+4}" text-anchor="middle" fill="white" font-size="${fs-1}" font-weight="700">${text}</text>`;
- };
- svg+=tag(p.landPrice,'#1464d2',(narrow?'ask ':'our ask ')+exact(p.landPrice),false);
- svg+=tag(p.floor,'#172e38',(narrow?'floor ':'our floor ')+exact(p.floor),true);
  svg+=`<polyline fill="none" stroke="#16704e" stroke-width="${narrow?3:3.5}" points="${path}"/>`;
  const px=Math.min(hi,Math.max(lo,p.plotPrice)),atPx=fastLand({...p,plotPrice:px});
  const py=Math.min(ymax,Math.max(0,atPx==null?0:atPx));
@@ -550,8 +542,8 @@ function drawCurve(p,even){
  // Both titles are centred on their own axis. The sheaf is the land we are selling; the
  // house is what they will be selling on it.
  const midX=(ML+(W-MR))/2,midY=(MT+(H-MB))/2;
- svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}">🏡 ${narrow?'Plot price, ₹ per layout cent':'Plot price they achieve, ₹ per layout cent'}</text>`;
- svg+=`<text transform="translate(${narrow?15:24},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}">🌾 ${narrow?'₹ per cent to us':'₹ per cent they can pay us'}</text>`;
+ svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🏡</tspan> ${narrow?'Plot price, ₹ per layout cent':'Plot price they achieve, ₹ per layout cent'}</text>`;
+ svg+=`<text transform="translate(${narrow?18:26},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🌾</tspan> ${narrow?'₹ per cent to us':'₹ per cent they can pay us'}</text>`;
  $('curve').innerHTML=svg;
  const at=fastLand(p);
  $('curve-note').textContent=
@@ -643,10 +635,21 @@ $('curve').addEventListener('keydown',e=>{
  if(h&&h.focus)h.focus();
 });
 for(const k of FILTERS)bindFilter(k);
+// The chart sizes itself from its measured box, so a measurement taken before the layout
+// settles leaves the viewBox smaller than the element and the SVG letterboxes inside it,
+// showing as dead space down one side. Watch the element itself rather than guess.
+let lastW=0,lastH=0,rz;
+function remeasure(force){
+ const r=$('curve').getBoundingClientRect?$('curve').getBoundingClientRect():null;
+ if(!force&&r&&Math.round(r.width)===lastW&&Math.round(r.height)===lastH)return;
+ if(r){lastW=Math.round(r.width);lastH=Math.round(r.height)}
+ clearTimeout(rz);rz=setTimeout(()=>drawCurve(state,evenPlot(state)),16);
+}
+if(typeof ResizeObserver!=='undefined'){try{new ResizeObserver(()=>remeasure()).observe($('curve'))}catch{}}
 if(typeof addEventListener!=='undefined'){
- let rz;const remeasure=()=>{clearTimeout(rz);rz=setTimeout(()=>drawCurve(state,evenPlot(state)),120)};
- addEventListener('resize',remeasure);
- addEventListener('orientationchange',remeasure);
+ addEventListener('resize',()=>remeasure());
+ addEventListener('orientationchange',()=>remeasure(true));
+ addEventListener('load',()=>remeasure(true));
 }
 $('rungs').addEventListener('input',e=>{rungs=readRungs(e.target.value);clearTimeout(timer);timer=setTimeout(render,120)});
 const KEY='moodbidri-seller-v1';
