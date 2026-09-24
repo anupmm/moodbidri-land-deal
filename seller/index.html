@@ -63,6 +63,7 @@ th{font-weight:600;color:var(--muted)}
 .legend{display:flex;gap:15px;font-size:13px;margin:12px 0}
 .legend i{width:12px;height:12px;display:inline-block;margin-right:5px}
 .chart{width:100%;height:260px}
+.curve{width:100%;height:410px;overflow:visible}
 .note{font-size:14px;color:var(--muted)}
 .heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
 .heading h2{margin:0}
@@ -87,6 +88,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
  .ladder tr.here th:first-child,.ladder tr.here td:first-child{background:#eaf2fe}
  .heat th:first-child{background:white}
  .chart{height:220px}
+ .curve{height:320px}
  footer{padding:0 16px 24px}
 }
 </style></head><body>
@@ -111,6 +113,18 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <p class="note">Saved in this browser only. Nominal rupees; no indexation, GST or professional fees.</p>
 </aside>
 <main>
+
+<section class="section">
+  <h2>What they can pay, at every plot price</h2>
+  <p class="note">The line is the most they can pay us per cent and still come out at zero. Anything below the line leaves them a profit; anything above it loses them money. Everything on the left panel moves it.</p>
+  <div class="legend">
+    <span><i style="background:#16704e"></i>Break-even land price</span>
+    <span><i style="background:#1464d2"></i>Our ask</span>
+    <span><i style="background:#172e38"></i>Our floor</span>
+  </div>
+  <svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 410"></svg>
+  <p class="note" id="curve-note"></p>
+</section>
 
 <section class="section">
   <div class="heading"><h2>Price ladder</h2><span class="note">Click a row to make it the ask</span></div>
@@ -173,7 +187,7 @@ function bisect(fn,increasing){let lo=0,hi=100000;const a=fn(lo);if(increasing?a
 function solve(p){return{breakEven:bisect(x=>calculate({...p,plotPrice:x},false).profit,true),hurdlePrice:bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true),ceiling:bisect(x=>npv(calculate({...p,landPrice:x},false).eq,p.hurdle/100),false)}}
 </script>
 <script>
-const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:80000000,share:54};
+const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:80000000,share:54,interest:10};
 const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
 const fields=[
 ['Our side',[
@@ -217,6 +231,8 @@ const signed=n=>(n>=0?'+':'−')+money(Math.abs(n));
 
 // Plot price at which the buyer's profit is exactly zero. Depends on no target return.
 function breakEvenPlot(p){return bisect(x=>calculate({...p,plotPrice:x},false).profit,true)}
+// The mirror image: the most they can pay per cent at a given plot price, profit exactly zero.
+function breakEvenLand(p){return bisect(x=>calculate({...p,landPrice:x},false).profit,false)}
 // Banded on profit over total spend, so no target return is assumed anywhere.
 const BANDS=[[.25,'Comfortable','c-green'],[.12,'Workable','c-amber'],[0,'Thin','c-orange']];
 function verdict(roi){
@@ -349,10 +365,58 @@ function render(){
   ['= Their profit',r.profit,'Gross sales less all six components']]
   .map(([a,b,c])=>`<tr><td>${a}</td><td title="${exact(b)}">${money(b)}</td><td>${c}</td></tr>`).join('');
 
+ drawCurve(p,even);
  drawChart(r.rows);
  $('flows').innerHTML=r.rows.map(x=>`<tr title="Month ${x.m}: cumulative equity ${exact(x.cum)}"><td>${x.m}</td>${['acquisition','development','sales','fee','draw','int','repayment','debt','u','e','cum'].map(k=>`<td>${(x[k]/1e5).toFixed(2)}</td>`).join('')}</tr>`).join('');
  heat2();
  $('debt-note').textContent=p.landDebt===0&&p.devDebt===0?'Debt funding is 0%, so the interest rate changes nothing here. Raise the debt shares under Their detail to make this table bite.':'Includes drawdowns, monthly interest and repayments from sales.';
+}
+
+function drawCurve(p,even){
+ const lo=Math.max(0,Math.min(200000,Math.floor(p.plotPrice*.6/50000)*50000));
+ const hi=Math.max(500000,Math.ceil(p.plotPrice*1.4/50000)*50000);
+ const N=37,pts=[];
+ for(let i=0;i<N;i++){
+  const x=lo+(hi-lo)*i/(N-1),y=breakEvenLand({...p,plotPrice:x});
+  pts.push({x,y:y==null?0:Math.max(0,y)});
+ }
+ const W=900,H=410,ML=96,MR=26,MT=24,MB=62;
+ const top=Math.max(...pts.map(q=>q.y),p.landPrice,p.floor)*1.08||1;
+ const ymax=Math.max(25000,Math.ceil(top/25000)*25000);
+ const X=v=>ML+(v-lo)/(hi-lo)*(W-ML-MR),Y=v=>H-MB-v/ymax*(H-MB-MT);
+ const path=pts.map(q=>X(q.x)+','+Y(q.y)).join(' ');
+ let svg='';
+ // Below the line they make money, above it they do not.
+ svg+=`<polygon points="${X(lo)},${Y(0)} ${path} ${X(hi)},${Y(0)}" fill="#e3f3ea"/>`;
+ svg+=`<polygon points="${X(lo)},${Y(ymax)} ${path} ${X(hi)},${Y(ymax)}" fill="#fbeaea"/>`;
+ for(let i=0;i<=5;i++){const v=ymax*i/5;
+  svg+=`<line x1="${ML}" x2="${W-MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff" stroke-width="1"/>`+
+   `<text x="${ML-12}" y="${Y(v)+4}" text-anchor="end" fill="#596e76" font-size="13">${fmt.format(Math.round(v))}</text>`;}
+ for(let i=0;i<=6;i++){const v=lo+(hi-lo)*i/6;
+  svg+=`<line x1="${X(v)}" x2="${X(v)}" y1="${MT}" y2="${H-MB}" stroke="#ffffff" stroke-width="1"/>`+
+   `<text x="${X(v)}" y="${H-MB+22}" text-anchor="middle" fill="#596e76" font-size="13">${(v/1e5).toFixed(2)} L</text>`;}
+ const rule=(y,color,label)=>y>ymax?'':
+  `<line x1="${ML}" x2="${W-MR}" y1="${Y(y)}" y2="${Y(y)}" stroke="${color}" stroke-width="2" stroke-dasharray="7 5"/>`+
+  `<text x="${W-MR-4}" y="${Y(y)-8}" text-anchor="end" fill="${color}" font-size="13" font-weight="700">${label} ${exact(y)}</text>`;
+ svg+=rule(p.floor,'#172e38','our floor');
+ svg+=rule(p.landPrice,'#1464d2','our ask');
+ if(p.plotPrice>=lo&&p.plotPrice<=hi){
+  const here=breakEvenLand(p);
+  svg+=`<line x1="${X(p.plotPrice)}" x2="${X(p.plotPrice)}" y1="${MT}" y2="${H-MB}" stroke="#7f939d" stroke-width="2" stroke-dasharray="4 4"/>`+
+   `<text x="${X(p.plotPrice)}" y="${MT-7}" text-anchor="middle" fill="#596e76" font-size="13" font-weight="700">we assume ${lakh(p.plotPrice)}</text>`;
+  if(here!=null&&here<=ymax)svg+=`<circle cx="${X(p.plotPrice)}" cy="${Y(here)}" r="6" fill="#16704e" stroke="white" stroke-width="2"/>`;
+ }
+ svg+=`<polyline fill="none" stroke="#16704e" stroke-width="3" points="${path}"/>`;
+ svg+=`<text x="${ML}" y="${H-12}" fill="#596e76" font-size="13">Plot price they achieve, ₹ per layout cent →</text>`;
+ svg+=`<text transform="translate(22,${MT+10}) rotate(-90)" fill="#596e76" font-size="13" text-anchor="end">₹ per cent they can pay us →</text>`;
+ $('curve').innerHTML=svg;
+ const at=breakEvenLand(p);
+ $('curve-note').textContent=
+  (at==null?`At ${lakh(p.plotPrice)} per layout cent they lose money even if we give the land away. `:
+   `At the ${lakh(p.plotPrice)} we assume, they break even at ${exact(at)} per cent. `)+
+  (even==null?'':`Read the other way: our ${exact(p.landPrice)} ask needs plots at ${lakh(even)}. `)+
+  (p.landDebt===0&&p.devDebt===0?`Debt is set to 0%, so the ${p.interest}% interest rate is not touching this line. Set the debt shares under Their detail to bring financing into it.`:
+   `Financing is in the line: ${p.landDebt}% of land and ${p.devDebt}% of development at ${p.interest}% a year.`);
 }
 
 function drawChart(rows){

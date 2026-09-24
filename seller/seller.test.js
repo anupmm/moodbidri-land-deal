@@ -12,6 +12,7 @@ const context={};vm.createContext(context);
 vm.runInContext(html.match(MODEL)[1]+'\nthis.api={DEFAULTS,calculate,solve,npv,irr,bisect};',context);
 const{DEFAULTS:D,calculate,npv,bisect}=context.api;
 const breakEvenPlot=p=>bisect(x=>calculate({...p,plotPrice:x},false).profit,true);
+const breakEvenLand=p=>bisect(x=>calculate({...p,landPrice:x},false).profit,false);
 
 // Seller proceeds are linear in the ask and independent of every buyer assumption.
 const atFloor=calculate({...D,landPrice:80000});
@@ -38,6 +39,21 @@ const half=calculate({...D,dev:60000000,share:50}),full=calculate({...D,dev:6000
 close(60000000/(half.saleable*435.6),206.51,.01);
 close(60000000/(full.saleable*435.6),103.25,.01);
 close(calculate({...D,dev:60000000,share:54}).saleable*435.6,313788.8,.1);
+// The curve is the ladder's solver read the other way round, so the two must agree.
+const PAGE={...D,landPrice:100000,plotPrice:330000,dev:80000000,share:54,interest:10};
+close(calculate({...PAGE,landPrice:breakEvenLand(PAGE)}).profit,0,.1);
+close(breakEvenLand({...PAGE,plotPrice:breakEvenPlot(PAGE)}),PAGE.landPrice,1);
+close(breakEvenLand(PAGE),105895,1);
+// Rising plot prices must raise what they can pay, monotonically.
+let last=-1;
+for(const x of[200000,250000,300000,350000,400000,450000,500000]){
+  const y=breakEvenLand({...PAGE,plotPrice:x});
+  assert.ok(y>last,`break-even land must rise with plot price, broke at ${x}`);last=y;
+}
+// With no debt the interest rate cannot move the line.
+close(breakEvenLand(PAGE),breakEvenLand({...PAGE,interest:18}),1e-6);
+assert.ok(breakEvenLand({...PAGE,devDebt:60,interest:18})<breakEvenLand({...PAGE,devDebt:60,interest:8}),'with debt, dearer money must lower what they can pay');
+
 console.log('Seller model checks passed. Lever = '+lever.toFixed(2)+'x, break-even at a 1L ask = '+Math.round(need));
 
 // Smoke-render the UI against a DOM stub so template and id typos fail here, not in the browser.
@@ -47,7 +63,7 @@ context.document={getElementById(id){if(!nodes.has(id))nodes.set(id,node());retu
 context.localStorage={setItem:(k,v)=>store.set(k,v),getItem:k=>store.has(k)?store.get(k):null,removeItem:k=>store.delete(k)};
 context.setTimeout=setTimeout;context.clearTimeout=clearTimeout;context.Intl=Intl;
 vm.runInContext([...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)][1][1],context);
-for(const id of['h-ask','h-gross','h-net','h-dev','h-profit','h-foot','ladder','lever','matrix','seller-detail','tds','waterfall','flows','heat2','chart','buyer','returns'])
+for(const id of['h-ask','h-gross','h-net','h-dev','h-profit','h-foot','curve','curve-note','ladder','lever','matrix','seller-detail','tds','waterfall','flows','heat2','chart','buyer','returns'])
   assert.ok(nodes.get(id)&&(nodes.get(id).innerHTML||nodes.get(id).textContent),`#${id} rendered empty`);
 assert.match(nodes.get('h-ask').textContent,/1,00,000/);
 assert.match(nodes.get('h-gross').textContent,/13\.34 cr/);
@@ -61,6 +77,11 @@ assert.match(nodes.get('h-foot').textContent,/break even at .* per layout cent/)
 assert.match(nodes.get('ladder').innerHTML,/data-price="150000"/);
 assert.match(nodes.get('ladder').innerHTML,/floor<\/span>/);
 assert.match(nodes.get('lever').innerHTML,/The lever/);
+const curve=nodes.get('curve').innerHTML;
+assert.match(curve,/<polyline[^>]*stroke="#16704e"/,'the break-even line should be drawn');
+assert.equal((curve.match(/<polygon/g)||[]).length,2,'profit and loss regions should both be shaded');
+assert.match(nodes.get('curve-note').textContent,/they break even at .*per cent/);
+assert.match(nodes.get('curve-note').textContent,/Debt is set to 0%/,'the note must say the interest rate is inert at zero debt');
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
 // Rupee and area boxes carry Indian separators; everything else stays a plain number box.
 const panel=nodes.get('inputs').innerHTML;
