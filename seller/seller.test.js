@@ -8,6 +8,37 @@ const panelOpenCheck=h=>/<details class="group" (?!open)/.test(h);
 // The seller view must carry the same model as the root modeler, character for character.
 assert.equal(html.match(MODEL)[1],root.match(MODEL)[1],'seller/index.html model block has drifted from index.html');
 
+// Tag counts can balance while the nesting is wrong: a stray </div> once closed div.layout
+// early, throwing the chart, the panel and main out of the page grid while 36 opens still
+// matched 36 closes. So check the nesting, and that the grid still contains its four children.
+{
+ const VOID=new Set(['input','br','img','meta','link','hr','source','col','area']);
+ const body=html.slice(html.indexOf('<body>'))
+  .replace(/<script[\s\S]*?<\/script>/g,'').replace(/<style[\s\S]*?<\/style>/g,'').replace(/<!--[\s\S]*?-->/g,'');
+ const stack=[];
+ for(const m of body.matchAll(/<(\/?)([a-zA-Z][a-zA-Z0-9-]*)\b([^>]*?)(\/?)>/g)){
+  const close=m[1],tag=m[2].toLowerCase();
+  if(VOID.has(tag)||m[4])continue;
+  if(!close){stack.push(tag);continue}
+  if(tag==='html')continue;
+  const top=stack.pop();
+  assert.equal(top,tag,`</${tag}> closes <${top}> near: ${body.slice(Math.max(0,m.index-70),m.index+12).replace(/\s+/g,' ')}`);
+ }
+ assert.deepEqual(stack.filter(t=>t!=='html'),[],'unclosed tags: '+stack.join(', '));
+ const start=body.indexOf('<div class="layout">');
+ assert.ok(start>0,'div.layout is missing');
+ let depth=0,end=-1;
+ for(const m of body.slice(start).matchAll(/<(\/?)div\b[^>]*>/g)){
+  depth+=m[1]?-1:1;
+  if(depth===0){end=start+m.index;break}
+ }
+ assert.ok(end>start,'div.layout never closes');
+ for(const child of['curve-panel','class="hero"','<aside>','<main>']){
+  const at=body.indexOf(child);
+  assert.ok(at>start&&at<end,`${child} escaped div.layout, so the page grid will not lay it out`);
+ }
+}
+
 const context={};vm.createContext(context);
 vm.runInContext(html.match(MODEL)[1]+'\nthis.api={DEFAULTS,calculate,solve,npv,irr,bisect};',context);
 const{DEFAULTS:D,calculate,npv,bisect}=context.api;

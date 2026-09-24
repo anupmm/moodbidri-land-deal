@@ -68,8 +68,11 @@ th{font-weight:600;color:var(--muted)}
 #curve-handle{cursor:ew-resize;touch-action:none}
 .hint{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:7px}
 #curve-handle:focus-visible{outline:none}
-.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 26px;margin:20px 0 0;padding:16px 0 4px;border-top:1px solid var(--line)}
-.filters .field{border-top:0;padding:8px 0}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:8px 28px;margin:20px 0 0;padding:18px 0 4px;border-top:1px solid var(--line)}
+.filters .field{border-top:0;padding:6px 0;min-width:0}
+.filters label{display:block;margin-bottom:8px}
+.filters label .unit{margin-left:6px}
+.filters .hint{min-height:2.6em}
 .note{font-size:14px;color:var(--muted)}
 .heading{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
 .heading h2{margin:0}
@@ -82,7 +85,8 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
  .layout{display:flex;flex-direction:column;padding:14px;gap:14px}
  /* Chart first, then the hero, then the knobs, then the detail. */
  .curve-panel{order:1}.hero{order:2}aside{order:3;width:100%}main{order:4}
- .filters{grid-template-columns:1fr;gap:0}
+ .filters{grid-template-columns:1fr;gap:2px 0}
+ .filters .hint{min-height:0}
  .section,aside{padding:16px}
  .hero{padding:18px}
  .tiles{gap:16px 20px;margin-top:12px}
@@ -104,13 +108,13 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <section class="section curve-panel">
   <h2>What they can pay, at every plot price</h2>
   <p class="note">The green line is the most they can pay us per cent and still come out at zero. Below it they make money; above it they lose it. <strong>Drag the dot</strong> along the line to try a different plot price.</p>
-  </div>
   <svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 430"></svg>
   <p class="note" id="curve-note"></p>
   <div class="filters">
     <div class="field"><label for="f-dev">Development budget <span class="unit">&#8377; total</span></label><div class="inputline"><input id="f-dev" type="text" inputmode="numeric" autocomplete="off"></div><input type="range" id="f-dev-range"><small class="hint" id="f-dev-hint"></small></div>
     <div class="field"><label for="f-share">Saleable layout land <span class="unit">% of parcel</span></label><div class="inputline"><input id="f-share" type="number"></div><input type="range" id="f-share-range"><small class="hint" id="f-share-hint"></small></div>
     <div class="field"><label for="f-interest">Interest on their loan <span class="unit">% / year</span></label><div class="inputline"><input id="f-interest" type="number"></div><input type="range" id="f-interest-range"><small class="hint" id="f-interest-hint"></small></div>
+  </div>
 </section>
 
 <section class="hero">
@@ -494,7 +498,7 @@ function curveBox(){
  const H=Math.max(240,Math.round(r&&r.height?r.height:430));
  const narrow=W<560;
  return{W,H,narrow,fs:narrow?12:13,
-  ML:narrow?52:104,MR:narrow?14:30,MT:narrow?34:38,MB:narrow?54:74,
+  ML:narrow?58:104,MR:narrow?14:30,MT:narrow?30:38,MB:narrow?58:74,
   xt:narrow?3:6,yt:narrow?4:5};
 }
 
@@ -543,13 +547,11 @@ function drawCurve(p,even){
   `<circle cx="${cx}" cy="${cy}" r="${narrow?30:20}" fill="transparent"/>`+
   `<circle cx="${cx}" cy="${cy}" r="${narrow?11:9}" fill="#16704e" stroke="white" stroke-width="3"/>`+
   `</g>`;
- if(narrow){
-  svg+=`<text x="${ML-8}" y="${MT-12}" text-anchor="end" fill="#596e76" font-size="${fs}">\u20b9/cent</text>`;
-  svg+=`<text x="${W-MR}" y="${H-8}" text-anchor="end" fill="#596e76" font-size="${fs}">plot price, \u20b9 per layout cent</text>`;
- }else{
-  svg+=`<text x="${ML}" y="${H-14}" fill="#596e76" font-size="${fs}">Plot price they achieve, \u20b9 per layout cent \u2192</text>`;
-  svg+=`<text transform="translate(24,${MT+6}) rotate(-90)" fill="#596e76" font-size="${fs}" text-anchor="end">\u20b9 per cent they can pay us \u2192</text>`;
- }
+ // Both titles are centred on their own axis. The sheaf is the land we are selling; the
+ // house is what they will be selling on it.
+ const midX=(ML+(W-MR))/2,midY=(MT+(H-MB))/2;
+ svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}">🏡 ${narrow?'Plot price, ₹ per layout cent':'Plot price they achieve, ₹ per layout cent'}</text>`;
+ svg+=`<text transform="translate(${narrow?15:24},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}">🌾 ${narrow?'₹ per cent to us':'₹ per cent they can pay us'}</text>`;
  $('curve').innerHTML=svg;
  const at=fastLand(p);
  $('curve-note').textContent=
