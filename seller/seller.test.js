@@ -162,22 +162,24 @@ assert.match(nodes.get('ladder').innerHTML,/floor<\/span>/);
 assert.match(nodes.get('lever').innerHTML,/The lever/);
 const curve=nodes.get('curve').innerHTML;
 assert.match(curve,/<polyline[^>]*stroke="#16704e"/,'the break-even line should be drawn');
-assert.equal((curve.match(/<polygon/g)||[]).length,1,'the profit region should be shaded under the line');
-assert.match(curve,/<rect [^>]*fill="#fbeaea"/,'the loss region should be shaded behind it');
+// Axes flipped: profit is now the region ABOVE the line, so the shading swaps.
+assert.equal((curve.match(/<polygon/g)||[]).length,1,'the loss region should be shaded under the line');
+assert.match(curve,/<rect [^>]*fill="#e3f3ea"/,'the profit region should be the background above it');
+assert.match(curve,/<polygon [^>]*fill="#fbeaea"/,'under the line they lose money');
 assert.match(curve,/id="curve-handle"[^>]*role="slider"/,'the marker should be an accessible slider');
 // One draggable marker and nothing else: no ask or floor rules competing with it.
 assert.ok(!/our ask|our floor|ask .{0,3}1,00,000|floor .{0,3}80,000/.test(curve),'the chart should carry no ask or floor labels');
 assert.equal((curve.match(/stroke-dasharray/g)||[]).length,2,'only the marker crosshair should be dashed');
 // Axis titles centred on their axes, with icons big enough to read.
 assert.equal((curve.match(/<tspan font-size="21">/g)||[]).length,2,'both axis titles need an enlarged icon');
-assert.match(curve,/<\/tspan> Plot price they achieve, /);
-assert.match(curve,/<\/tspan> .{0,3} per cent they can pay us/);
+assert.match(curve,/<\/tspan> What we ask, /);
+assert.match(curve,/<\/tspan> Plot price they must achieve/);
 const xt=curve.match(/<text x="([\d.]+)" y="[\d.]+" text-anchor="middle"[^>]*><tspan/);
 assert.ok(xt,'the x axis title should be middle-anchored');
 assert.ok(Math.abs(+xt[1]-(104+(900-26))/2)<1,`x title at ${xt[1]} is not centred on the plot`);
 assert.match(curve,/rotate\(-90\)" text-anchor="middle"/,'the y axis title should be middle-anchored too');
-assert.match(nodes.get('curve-note').textContent,/they break even at .*per cent/);
-assert.match(nodes.get('curve-note').textContent,/Debt is 0%, so the 10% rate/,'the note must say the interest rate is inert at zero debt');
+assert.match(nodes.get('curve-note').textContent,/they need plots at .* per layout cent/);
+assert.match(nodes.get('curve-note').textContent,/50% of the land and 50% of development are borrowed at 10% a year/,'the note should name the borrowings');
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
 // Rupee and area boxes carry Indian separators; everything else stays a plain number box.
 const panel=nodes.get('inputs').innerHTML;
@@ -194,12 +196,12 @@ assert.equal(nodes.get('f-interest').value,'10');
 // Each chart control spells out the number behind it, and the hints are live, not build-time.
 assert.match(nodes.get('f-dev-hint').textContent,/₹287 per sq ft of layout land/);
 assert.match(nodes.get('f-share-hint').textContent,/720 saleable cents of 1,334 · 3,13,789 sq ft/);
-assert.match(nodes.get('f-interest-hint').textContent,/No effect yet: debt is 0%/);
+assert.match(nodes.get('f-interest-hint').textContent,/On 50% of land and 50% of development/);
 vm.runInContext('state.dev=120000000;state.share=45;state.devDebt=60;render()',context);
 assert.match(nodes.get('f-dev-hint').textContent,/₹459 per sq ft/,'the development hint must follow the input');
 assert.match(nodes.get('f-share-hint').textContent,/600 saleable cents/,'the saleable hint must follow the input');
 assert.match(nodes.get('f-interest-hint').textContent,/60% of development/,'the interest hint must notice debt');
-vm.runInContext('state.dev=90000000;state.share=54;state.devDebt=0;render()',context);
+vm.runInContext('state.dev=90000000;state.share=54;state.devDebt=50;render()',context);
 // The chart matches its viewBox to the measured pixel box, or phone labels shrink to ~5px.
 assert.equal(nodes.get('curve').viewBox,'0 0 900 430','the viewBox must track the measured size');
 // A snapshot saved under different defaults must not silently mask the shipped ones.
@@ -209,6 +211,8 @@ assert.ok(snap.stamp,'a save must carry the defaults stamp');
 assert.equal(snap.state.dev,90000000);
 assert.equal(snap.state.salesStart,12);
 assert.equal(snap.state.salesMonths,24);
+assert.equal(snap.state.landDebt,50);
+assert.equal(snap.state.devDebt,50);
 nodes.get('load').onclick();assert.match(nodes.get('status').textContent,/reloaded/);
 nodes.get('reset').onclick();assert.match(nodes.get('status').textContent,/cleared/);
 assert.equal(store.get('moodbidri-seller-v1'),undefined,'reset must clear the saved entry');

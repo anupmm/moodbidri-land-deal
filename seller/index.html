@@ -107,8 +107,8 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <header><div><small class="eyebrow">Moodbidri &middot; Dakshina Kannada</small><h1>Seller's view</h1><small>What each asking price nets us, and what the buyer has to believe to pay it.</small></div></header>
 <div class="layout">
 <section class="section curve-panel">
-  <h2>What they can pay, at every plot price</h2>
-  <p class="note">The green line is the most they can pay us per cent and still come out at zero. Below it they make money; above it they lose it. <strong>Drag the dot</strong> along the line to try a different plot price.</p>
+  <h2>What they must achieve, at every price we ask</h2>
+  <p class="note">The green line is the plot price they have to get for each price we ask, just to come out at zero. Above the line they make money; below it they lose it. <strong>Drag the dot</strong> along the line to try a different asking price.</p>
   <div class="curve-wrap"><svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 430"></svg></div>
   <p class="note" id="curve-note"></p>
   <div class="filters">
@@ -199,7 +199,7 @@ function bisect(fn,increasing){let lo=0,hi=100000;const a=fn(lo);if(increasing?a
 function solve(p){return{breakEven:bisect(x=>calculate({...p,plotPrice:x},false).profit,true),hurdlePrice:bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true),ceiling:bisect(x=>npv(calculate({...p,landPrice:x},false).eq,p.hurdle/100),false)}}
 </script>
 <script>
-const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:90000000,share:54,interest:10,salesStart:12,salesMonths:24};
+const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:90000000,share:54,interest:10,salesStart:12,salesMonths:24,landDebt:50,devDebt:50};
 const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
 const fields=[
 ['Our side',[
@@ -280,7 +280,7 @@ function fastPlot(p){
 
 // The curve is a function of every assumption except the plot price, so dragging the marker
 // along it must not rebuild it. Keyed on exactly the inputs that move it.
-const CURVE_LO=150000,CURVE_HI=600000,CURVE_N=37;
+const CURVE_LO=40000,CURVE_HI=200000,CURVE_N=37;
 const curveSig=p=>[p.area,p.share,p.stamp,p.dev,p.contingency,p.broker,p.growth,p.devStart,p.devMonths,p.salesStart,p.salesMonths,p.landDebt,p.devDebt,p.interest].join('|');
 let curveCache={sig:null,pts:null},plotCache={sig:null,by:new Map()};
 function curvePoints(p){
@@ -288,13 +288,13 @@ function curvePoints(p){
  if(curveCache.sig===sig)return curveCache.pts;
  const pts=[];
  for(let i=0;i<CURVE_N;i++){
-  const x=CURVE_LO+(CURVE_HI-CURVE_LO)*i/(CURVE_N-1),y=fastLand({...p,plotPrice:x});
+  const x=CURVE_LO+(CURVE_HI-CURVE_LO)*i/(CURVE_N-1),y=fastPlot({...p,landPrice:x});
   pts.push({x,y:y==null?0:Math.max(0,y)});
  }
  curveCache={sig,pts};
  return pts;
 }
-// Break-even plot price does not move with the plot price either, so cache it per ask.
+// Break-even plot price does not move with the plot price, so cache it per ask.
 function evenPlot(p){
  const sig=curveSig(p);
  if(plotCache.sig!==sig)plotCache={sig,by:new Map()};
@@ -500,30 +500,33 @@ function curveBox(){
  const narrow=W<560;
  return{W,H,narrow,fs:narrow?12:13,
   ML:narrow?62:104,MR:narrow?12:26,MT:narrow?30:38,MB:narrow?60:76,
-  xt:narrow?3:6,yt:narrow?4:5};
+  xt:narrow?4:8,yt:5};
 }
 
 function drawCurve(p,even){
  const g=curveBox(),{W,H,ML,MR,MT,MB,narrow,fs,xt,yt}=g;
  if($('curve').setAttribute)$('curve').setAttribute('viewBox',`0 0 ${W} ${H}`);
  const lo=CURVE_LO,hi=CURVE_HI,pts=curvePoints(p);
- const ymax=Math.max(25000,Math.ceil(Math.max(...pts.map(q=>q.y))*1.12/25000)*25000);
+ // A round step beats a tight fit: 1.50 L reads, 1.30 L does not.
+ const need=Math.max(...pts.map(q=>q.y))*1.08;
+ const step=[25000,50000,75000,100000,150000,200000,250000,500000].find(v=>v*yt>=need)||Math.ceil(need/yt/1e5)*1e5;
+ const ymax=step*yt;
  const X=v=>ML+(v-lo)/(hi-lo)*(W-ML-MR),Y=v=>H-MB-v/ymax*(H-MB-MT);
  curveGeom={lo,hi,ymax,W,ML,MR};
  const path=pts.map(q=>X(q.x).toFixed(1)+','+Y(q.y).toFixed(1)).join(' ');
- const money0=v=>narrow?(v?Math.round(v/1000)+'k':'0'):fmt.format(Math.round(v));
- let svg=`<rect x="${ML}" y="${MT}" width="${W-ML-MR}" height="${H-MB-MT}" fill="#fbeaea"/>`;
- svg+=`<polygon points="${X(lo)},${Y(0)} ${path} ${X(hi)},${Y(0)}" fill="#e3f3ea"/>`;
+ // Above the line the plots fetch more than they need, so the profit region is on top now.
+ let svg=`<rect x="${ML}" y="${MT}" width="${W-ML-MR}" height="${H-MB-MT}" fill="#e3f3ea"/>`;
+ svg+=`<polygon points="${X(lo)},${Y(0)} ${path} ${X(hi)},${Y(0)}" fill="#fbeaea"/>`;
  for(let i=0;i<=yt;i++){const v=ymax*i/yt;
   svg+=`<line x1="${ML}" x2="${W-MR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ffffff" opacity=".7"/>`+
-   `<text x="${ML-8}" y="${Y(v)+4}" text-anchor="end" fill="#596e76" font-size="${fs}">${money0(v)}</text>`;}
+   `<text x="${ML-8}" y="${Y(v)+4}" text-anchor="end" fill="#596e76" font-size="${fs}">${(v/1e5).toFixed(2)} L</text>`;}
  for(let i=0;i<=xt;i++){const v=lo+(hi-lo)*i/xt;
   svg+=`<line x1="${X(v)}" x2="${X(v)}" y1="${MT}" y2="${H-MB}" stroke="#ffffff" opacity=".7"/>`+
-   `<text x="${X(v)}" y="${H-MB+19}" text-anchor="middle" fill="#596e76" font-size="${fs}">${(v/1e5).toFixed(2)} L</text>`;}
- svg+=`<text x="${X(lo)+7}" y="${MT+17}" fill="#9a4040" font-size="${fs}" font-weight="700">${narrow?'they lose money':'they lose money up here'}</text>`;
- svg+=`<text x="${X(hi)-7}" y="${H-MB-10}" text-anchor="end" fill="#1d6b4c" font-size="${fs}" font-weight="700">${narrow?'they profit':'they make money down here'}</text>`;
+   `<text x="${X(v)}" y="${H-MB+19}" text-anchor="middle" fill="#596e76" font-size="${fs}">${narrow?Math.round(v/1000)+'k':fmt.format(v)}</text>`;}
+ svg+=`<text x="${X(lo)+7}" y="${MT+17}" fill="#1d6b4c" font-size="${fs}" font-weight="700">${narrow?'they profit':'plots fetch more than this and they profit'}</text>`;
+ svg+=`<text x="${X(hi)-7}" y="${H-MB-10}" text-anchor="end" fill="#9a4040" font-size="${fs}" font-weight="700">${narrow?'they lose money':'below the line they lose money'}</text>`;
  svg+=`<polyline fill="none" stroke="#16704e" stroke-width="${narrow?3:3.5}" points="${path}"/>`;
- const px=Math.min(hi,Math.max(lo,p.plotPrice)),atPx=fastLand({...p,plotPrice:px});
+ const px=Math.min(hi,Math.max(lo,p.landPrice)),atPx=fastPlot({...p,landPrice:px});
  const py=Math.min(ymax,Math.max(0,atPx==null?0:atPx));
  const cx=X(px),cy=Y(py);
  svg+=`<line x1="${cx}" x2="${cx}" y1="${cy}" y2="${H-MB}" stroke="#16704e" stroke-width="1.5" stroke-dasharray="3 3"/>`+
@@ -531,26 +534,26 @@ function drawCurve(p,even){
  const chip=(x,y,text,mid)=>{const w=text.length*(fs*.58)+14,rx=Math.max(2,Math.min(W-w-2,mid?x-w/2:x-w));
   return `<rect x="${rx}" y="${y-11}" width="${w}" height="22" rx="5" fill="#16704e"/>`+
    `<text x="${rx+w/2}" y="${y+4}" text-anchor="middle" fill="white" font-size="${fs-1}" font-weight="700">${text}</text>`;};
- // Narrow gutters cannot hold the full figure, so the read-off sits just inside the plot instead.
- svg+=narrow?chip(ML+6+(exact(py).length*(fs*.58)+14),cy,exact(py),false):chip(ML-8,cy,exact(py),false);
- svg+=chip(cx,H-MB+19,lakh(px),true);
- svg+=`<g id="curve-handle" tabindex="0" role="slider" aria-label="Plot price they achieve, rupees per layout cent" aria-valuemin="${Math.round(lo)}" aria-valuemax="${Math.round(hi)}" aria-valuenow="${Math.round(px)}" aria-valuetext="${lakh(px)} per layout cent">`+
+ svg+=narrow?chip(ML+6+(lakh(py).length*(fs*.58)+14),cy,lakh(py),false):chip(ML-8,cy,lakh(py),false);
+ svg+=chip(cx,H-MB+19,exact(px),true);
+ svg+=`<g id="curve-handle" tabindex="0" role="slider" aria-label="Our asking price, rupees per cent" aria-valuemin="${Math.round(lo)}" aria-valuemax="${Math.round(hi)}" aria-valuenow="${Math.round(px)}" aria-valuetext="${exact(px)} per cent">`+
   `<circle cx="${cx}" cy="${cy}" r="${narrow?30:20}" fill="transparent"/>`+
   `<circle cx="${cx}" cy="${cy}" r="${narrow?11:9}" fill="#16704e" stroke="white" stroke-width="3"/>`+
   `</g>`;
  // Both titles are centred on their own axis. The sheaf is the land we are selling; the
  // house is what they will be selling on it.
  const midX=(ML+(W-MR))/2,midY=(MT+(H-MB))/2;
- svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🏡</tspan> ${narrow?'Plot price, ₹ per layout cent':'Plot price they achieve, ₹ per layout cent'}</text>`;
- svg+=`<text transform="translate(${narrow?18:26},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🌾</tspan> ${narrow?'₹ per cent to us':'₹ per cent they can pay us'}</text>`;
+ svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🌾</tspan> ${narrow?'Our ask, ₹ per cent':'What we ask, ₹ per cent'}</text>`;
+ svg+=`<text transform="translate(${narrow?18:26},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🏡</tspan> ${narrow?'₹ per layout cent':'Plot price they must achieve'}</text>`;
  $('curve').innerHTML=svg;
  const at=fastLand(p);
  $('curve-note').textContent=
-  (at==null?`At ${lakh(p.plotPrice)} per layout cent they lose money even if we give the land away. `:
-   `At ${lakh(p.plotPrice)} per layout cent they break even at ${exact(at)} per cent, which is ${money(at*p.area)} gross to us. `)+
-  (even==null?'':`Read the other way: our ${exact(p.landPrice)} ask needs plots at ${lakh(even)}. `)+
-  (p.landDebt===0&&p.devDebt===0?`Debt is 0%, so the ${p.interest}% rate is not touching this line yet \u2014 set the debt shares under Their timing and debt.`:
-   `${p.landDebt}% of land and ${p.devDebt}% of development are borrowed at ${p.interest}% a year.`);
+  (even==null?`At ${exact(p.landPrice)} per cent there is no plot price that works for them. `:
+   `At ${exact(p.landPrice)} per cent they need plots at ${lakh(even)} per layout cent. We are assuming ${lakh(p.plotPrice)}, `+
+   (even<=p.plotPrice?`so this ask leaves them ${lakh(p.plotPrice-even)} of room. `:`so this ask is ${lakh(even-p.plotPrice)} beyond what we think they can get. `))+
+  (at==null?'':`They break even at ${exact(at)} per cent, ${money(at*p.area)} gross to us. `)+
+  (p.landDebt===0&&p.devDebt===0?`Debt is 0%, so the ${p.interest}% rate is not touching this line — set the debt shares under Their timing and debt.`:
+   `${p.landDebt}% of the land and ${p.devDebt}% of development are borrowed at ${p.interest}% a year.`);
 }
 
 function drawChart(rows){
@@ -590,9 +593,9 @@ function plotFromPointer(e){
  if(!r.width)return;
  const{lo,hi,W,ML,MR}=curveGeom;
  const frac=((e.clientX-r.left)/r.width*W-ML)/(W-ML-MR);
- const v=Math.round((lo+Math.min(1,Math.max(0,frac))*(hi-lo))/2500)*2500;
- if(v===state.plotPrice)return;
- state.plotPrice=Math.min(1000000,Math.max(0,v));paint();
+ const v=Math.round((lo+Math.min(1,Math.max(0,frac))*(hi-lo))/1000)*1000;
+ if(v===state.landPrice)return;
+ state.landPrice=Math.min(300000,Math.max(0,v));paint();
 }
 function endDrag(){
  if(!dragging)return;
@@ -628,7 +631,7 @@ $('curve').addEventListener('keydown',e=>{
  const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;
  if(!d)return;
  e.preventDefault();
- state.plotPrice=Math.min(1000000,Math.max(0,state.plotPrice+d*(e.shiftKey?25000:5000)));
+ state.landPrice=Math.min(300000,Math.max(0,state.landPrice+d*(e.shiftKey?10000:2500)));
  render();
  const h=$('curve').querySelector&&$('curve').querySelector('#curve-handle');
  if(h&&h.focus)h.focus();
