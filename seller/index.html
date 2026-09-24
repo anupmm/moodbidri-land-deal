@@ -3,9 +3,7 @@
 <style>
 :root{--ink:#172e38;--muted:#596e76;--line:#dce4e7;--blue:#1464d2;--bg:#f0f4f7;--green:#16704e;--red:#aa3535}
 *{box-sizing:border-box}
-html{overflow-x:hidden}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden;max-width:100%}
-.layout,header,footer,aside,main,.section,.hero{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif;-webkit-text-size-adjust:100%;overflow-x:hidden}
 header{background:#142e3a;color:white;padding:25px 4vw;display:flex;justify-content:space-between;align-items:center;gap:20px}
 h1{font-size:25px;margin:2px 0}h2{font-size:19px;margin:0 0 16px}p{margin:8px 0}
 small,.muted{color:var(--muted)}header small{color:#b5c9d4}
@@ -65,7 +63,8 @@ th{font-weight:600;color:var(--muted)}
 .legend{display:flex;gap:15px;font-size:13px;margin:12px 0}
 .legend i{width:12px;height:12px;display:inline-block;margin-right:5px}
 .chart{width:100%;height:260px}
-.curve{width:100%;height:430px;display:block;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.curve-wrap{position:relative;width:100%;height:430px}
+.curve{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .curve.dragging{touch-action:none}
 #curve-handle{cursor:ew-resize;touch-action:none}
 .hint{display:block;color:var(--muted);font-size:12.5px;line-height:1.4;margin-top:7px}
@@ -84,7 +83,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 @media(max-width:820px){
  header{padding:18px 16px;align-items:start}
  h1{font-size:22px}h2{font-size:17px}
- .layout{display:flex;flex-direction:column;padding:14px;gap:14px}
+ .layout{display:flex;flex-direction:column;align-items:stretch;padding:14px;gap:14px}
  /* Chart first, then the hero, then the knobs, then the detail. */
  .curve-panel{order:1}.hero{order:2}aside{order:3;width:100%}main{order:4}
  .filters{grid-template-columns:1fr;gap:2px 0}
@@ -101,7 +100,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
  .ladder tr.here th:first-child,.ladder tr.here td:first-child{background:#eaf2fe}
  .heat th:first-child{background:white}
  .chart{height:220px}
- .curve{height:380px}
+ .curve-wrap{height:380px}
  footer{padding:0 16px 24px}
 }
 </style></head><body>
@@ -110,7 +109,7 @@ footer{padding:0 24px 30px;max-width:1660px;margin:auto;font-size:13px;color:var
 <section class="section curve-panel">
   <h2>What they can pay, at every plot price</h2>
   <p class="note">The green line is the most they can pay us per cent and still come out at zero. Below it they make money; above it they lose it. <strong>Drag the dot</strong> along the line to try a different plot price.</p>
-  <svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 430"></svg>
+  <div class="curve-wrap"><svg id="curve" class="curve" role="img" aria-label="Break-even land price against the plot price the buyer achieves" viewBox="0 0 900 430"></svg></div>
   <p class="note" id="curve-note"></p>
   <div class="filters">
     <div class="field"><label for="f-dev">Development budget <span class="unit">&#8377; total</span></label><div class="inputline"><input id="f-dev" type="text" inputmode="numeric" autocomplete="off"></div><input type="range" id="f-dev-range"><small class="hint" id="f-dev-hint"></small></div>
@@ -645,7 +644,7 @@ function remeasure(force){
  if(r){lastW=Math.round(r.width);lastH=Math.round(r.height)}
  clearTimeout(rz);rz=setTimeout(()=>drawCurve(state,evenPlot(state)),16);
 }
-if(typeof ResizeObserver!=='undefined'){try{new ResizeObserver(()=>remeasure()).observe($('curve'))}catch{}}
+if(typeof ResizeObserver!=='undefined'){try{new ResizeObserver(()=>remeasure()).observe($('curve').parentNode||$('curve'))}catch{}}
 if(typeof addEventListener!=='undefined'){
  addEventListener('resize',()=>remeasure());
  addEventListener('orientationchange',()=>remeasure(true));

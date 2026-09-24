@@ -39,6 +39,28 @@ assert.equal(html.match(MODEL)[1],root.match(MODEL)[1],'seller/index.html model 
  }
 }
 
+// The mobile layout once collapsed to 44% of the screen, with iOS zooming the whole page
+// out to fit. Two things combined: .layout carries align-items:start for the desktop grid,
+// and the mobile rule switches it to a column flex container without resetting that, so
+// every section shrink-wrapped to its content; and the chart is an <svg> with a viewBox and
+// a fixed height, which reports an intrinsic width from its aspect ratio, 795pt here. The
+// section grew to fit it and the document went wider than the screen.
+{
+ const css=html.slice(html.indexOf('<style>'),html.indexOf('</style>'));
+ const mobile=css.slice(css.indexOf('@media(max-width:820px)'));
+ const layout=mobile.match(/\.layout\{([^}]*)\}/);
+ assert.ok(layout,'the mobile layout rule went missing');
+ assert.ok(/display:flex/.test(layout[1]),'the mobile layout should be a flex column');
+ assert.ok(/align-items:stretch/.test(layout[1]),
+  'a column flex .layout must reset align-items, or every section shrink-wraps to its content');
+ // Belt and braces: out of flow, the chart cannot drive its container whatever the layout does.
+ assert.match(css,/\.curve-wrap\{position:relative/,'the chart needs a positioned wrapper');
+ assert.match(css,/\.curve\{position:absolute/,'the chart must be out of flow so it cannot size its parent');
+ assert.match(html,/<div class="curve-wrap"><svg id="curve"/,'the chart should sit inside its wrapper');
+ // A fixed height on an in-flow viewBox svg is the shape of the bug; make sure it is gone.
+ assert.ok(!/\.curve\{[^}]*height:\d+px/.test(css),'height belongs on the wrapper, not the in-flow svg');
+}
+
 const context={};vm.createContext(context);
 vm.runInContext(html.match(MODEL)[1]+'\nthis.api={DEFAULTS,calculate,solve,npv,irr,bisect};',context);
 const{DEFAULTS:D,calculate,npv,bisect}=context.api;
