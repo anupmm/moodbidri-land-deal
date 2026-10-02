@@ -199,7 +199,7 @@ function bisect(fn,increasing){let lo=0,hi=100000;const a=fn(lo);if(increasing?a
 function solve(p){return{breakEven:bisect(x=>calculate({...p,plotPrice:x},false).profit,true),hurdlePrice:bisect(x=>npv(calculate({...p,plotPrice:x},false).eq,p.hurdle/100),true),ceiling:bisect(x=>npv(calculate({...p,landPrice:x},false).eq,p.hurdle/100),false)}}
 </script>
 <script>
-const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,dev:90000000,share:54,interest:10,salesStart:12,salesMonths:24,landDebt:50,devDebt:50};
+const SELLER_DEFAULTS={...DEFAULTS,landPrice:100000,floor:80000,plotPrice:330000,plotHigh:350000,dev:90000000,share:54,interest:10,salesStart:12,salesMonths:24,landDebt:50,devDebt:50};
 const RUNGS_DEFAULT=[80000,100000,110000,120000,150000];
 const fields=[
 ['Our side',[
@@ -209,7 +209,8 @@ const fields=[
  ['tax','Effective LTCG rate','%',0,40,.05,'Applied to the gain, taken at a zero cost basis.']
 ]],
 ['Their layout and costs',[
- ['plotPrice','Plot price they achieve','\u20b9 / layout cent',0,1000000,5000,'Price per saleable cent in the finished layout. Also set by dragging the dot on the chart.'],
+ ['plotPrice','Plot price today, low','₹ / layout cent',0,1000000,5000,'Bottom of what finished plots fetch today. This is the one that drives every number on the page.'],
+ ['plotHigh','Plot price today, high','₹ / layout cent',0,1000000,5000,'Top of what finished plots fetch today. Draws the band on the chart; the low end does the arithmetic.'],
  ['stamp','Stamp duty + registration','%',0,15,.1,'Buyer acquisition charges as a percentage of land value.'],
  ['plotSize','Typical plot size','cents',.1,20,.1,'Used for the indicative plot count only.'],
  ['contingency','Development contingency','%',0,50,1,'Added to the development budget set above the chart.'],
@@ -414,7 +415,7 @@ function render(){
  $('h-profit-sub').textContent=`${pct(r.roi)} on the ${money(r.cost)} they spend, earned over ${years.toFixed(1)} years — ${pct(r.eqIRR)} a year`;
  $('h-foot').textContent=even==null?
   `There is no plot price at which they break even on these assumptions.`:
-  `They break even at ${lakh(even)} per layout cent and we are assuming ${lakh(p.plotPrice)}. `+
+  `They break even at ${lakh(even)} per layout cent, against the ${lakh(Math.min(p.plotPrice,p.plotHigh))} to ${lakh(Math.max(p.plotPrice,p.plotHigh))} plots fetch today. `+
   (overFloor>0?`This ask is ${signed(overFloor)} to us over our ${exact(p.floor)} floor.`:
    overFloor<0?`This ask is ${money(-overFloor)} below what our ${exact(p.floor)} floor would net.`:
    `This ask is our ${exact(p.floor)} floor.`);
@@ -525,6 +526,14 @@ function drawCurve(p,even){
    `<text x="${X(v)}" y="${H-MB+19}" text-anchor="middle" fill="#596e76" font-size="${fs}">${narrow?Math.round(v/1000)+'k':fmt.format(v)}</text>`;}
  svg+=`<text x="${X(lo)+7}" y="${MT+17}" fill="#1d6b4c" font-size="${fs}" font-weight="700">${narrow?'they profit':'plots fetch more than this and they profit'}</text>`;
  svg+=`<text x="${X(hi)-7}" y="${H-MB-10}" text-anchor="end" fill="#9a4040" font-size="${fs}" font-weight="700">${narrow?'they lose money':'below the line they lose money'}</text>`;
+ // What plots actually fetch today. Where the line crosses this band is what he can pay.
+ const bLo=Math.max(0,Math.min(p.plotPrice,p.plotHigh)),bHi=Math.min(ymax,Math.max(p.plotPrice,p.plotHigh));
+ if(bHi>bLo){
+  const yTop=Y(bHi),yBot=Y(Math.min(ymax,bLo));
+  svg+=`<rect x="${ML}" y="${yTop}" width="${W-ML-MR}" height="${yBot-yTop}" fill="#1464d2" opacity=".13"/>`;
+  for(const yy of[yTop,yBot])svg+=`<line x1="${ML}" x2="${W-MR}" y1="${yy}" y2="${yy}" stroke="#1464d2" stroke-width="1.5" opacity=".55"/>`;
+  svg+=`<text x="${W-MR-8}" y="${yTop-7}" text-anchor="end" fill="#1a4f9c" font-size="${fs}" font-weight="700">${narrow?`plots today ${lakh(bLo)}–${lakh(bHi)}`:`what plots fetch today, ${lakh(bLo)} to ${lakh(bHi)}`}</text>`;
+ }
  svg+=`<polyline fill="none" stroke="#16704e" stroke-width="${narrow?3:3.5}" points="${path}"/>`;
  const px=Math.min(hi,Math.max(lo,p.landPrice)),atPx=fastPlot({...p,landPrice:px});
  const py=Math.min(ymax,Math.max(0,atPx==null?0:atPx));
@@ -546,12 +555,13 @@ function drawCurve(p,even){
  svg+=`<text x="${midX}" y="${H-10}" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🌾</tspan> ${narrow?'Our ask, ₹ per cent':'What we ask, ₹ per cent'}</text>`;
  svg+=`<text transform="translate(${narrow?18:26},${midY}) rotate(-90)" text-anchor="middle" fill="#596e76" font-size="${fs}"><tspan font-size="${fs+8}">🏡</tspan> ${narrow?'₹ per layout cent':'Plot price they must achieve'}</text>`;
  $('curve').innerHTML=svg;
- const at=fastLand(p);
+ const bandLow=Math.min(p.plotPrice,p.plotHigh),bandHigh=Math.max(p.plotPrice,p.plotHigh);
+ const lowAsk=fastLand({...p,plotPrice:bandLow}),highAsk=fastLand({...p,plotPrice:bandHigh});
  $('curve-note').textContent=
   (even==null?`At ${exact(p.landPrice)} per cent there is no plot price that works for them. `:
-   `At ${exact(p.landPrice)} per cent they need plots at ${lakh(even)} per layout cent. We are assuming ${lakh(p.plotPrice)}, `+
-   (even<=p.plotPrice?`so this ask leaves them ${lakh(p.plotPrice-even)} of room. `:`so this ask is ${lakh(even-p.plotPrice)} beyond what we think they can get. `))+
-  (at==null?'':`They break even at ${exact(at)} per cent, ${money(at*p.area)} gross to us. `)+
+   `At ${exact(p.landPrice)} per cent they need plots at ${lakh(even)} per layout cent. `)+
+  (lowAsk==null||highAsk==null?'':
+   `Plots at ${lakh(bandLow)} to ${lakh(bandHigh)} put their ceiling between ${exact(lowAsk)} and ${exact(highAsk)} per cent, ${money(lowAsk*p.area)} to ${money(highAsk*p.area)} gross to us. That is where they stop making money, not what they will offer. `)+
   (p.landDebt===0&&p.devDebt===0?`Debt is 0%, so the ${p.interest}% rate is not touching this line — set the debt shares under Their timing and debt.`:
    `${p.landDebt}% of the land and ${p.devDebt}% of development are borrowed at ${p.interest}% a year.`);
 }

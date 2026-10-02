@@ -179,11 +179,17 @@ assert.ok(xt,'the x axis title should be middle-anchored');
 assert.ok(Math.abs(+xt[1]-(104+(900-26))/2)<1,`x title at ${xt[1]} is not centred on the plot`);
 assert.match(curve,/rotate\(-90\)" text-anchor="middle"/,'the y axis title should be middle-anchored too');
 assert.match(nodes.get('curve-note').textContent,/they need plots at .* per layout cent/);
+// The market is a band, and where the line crosses it is what he can pay.
+assert.match(curve,/<rect [^>]*fill="#1464d2" opacity="\.13"/,'the band of achievable plot prices should be shaded');
+assert.match(curve,/what plots fetch today, .*3\.30 L to .*3\.50 L/,'the band should name its range');
+assert.match(nodes.get('curve-note').textContent,/put their ceiling between .*89,755 and .*98,910 per cent/,'the note should give the ceiling the band implies');
+assert.match(nodes.get('curve-note').textContent,/not what they will offer/,'the note must not let a ceiling read as an offer');
+assert.match(nodes.get('h-foot').textContent,/against the .*3\.30 L to .*3\.50 L plots fetch today/);
 assert.match(nodes.get('curve-note').textContent,/50% of the land and 50% of development are borrowed at 10% a year/,'the note should name the borrowings');
 assert.equal(nodes.get('warnings'),undefined,'the warning banners were removed; nothing should render into #warnings');
 // Rupee and area boxes carry Indian separators; everything else stays a plain number box.
 const panel=nodes.get('inputs').innerHTML;
-for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['area','1,334']])
+for(const[k,v]of[['landPrice','1,00,000'],['floor','80,000'],['plotPrice','3,30,000'],['plotHigh','3,50,000'],['area','1,334']])
   assert.ok(panel.includes(`<input id="${k}" type="text" inputmode="numeric" autocomplete="off" value="${v}"`),`${k} should be a grouped text box showing ${v}`);
 for(const k of['tax','salesMonths','devDebt'])
   assert.ok(panel.includes(`<input id="${k}" type="number"`),`${k} should stay a plain number box`);
